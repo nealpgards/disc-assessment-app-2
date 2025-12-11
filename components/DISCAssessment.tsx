@@ -17,6 +17,19 @@ import {
   Legend,
 } from 'recharts'
 
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
 // Types
 type DISCType = 'D' | 'I' | 'S' | 'C'
 
@@ -252,8 +265,8 @@ const profileDescriptions: Record<DISCType, ProfileDescription> = {
   },
   I: {
     name: 'Influence',
-    color: '#f59e0b',
-    bgColor: '#fffbeb',
+    color: '#d97706',
+    bgColor: '#fef3c7',
     traits: ['Enthusiastic', 'Optimistic', 'Collaborative', 'Creative', 'Persuasive'],
     naturalDesc:
       'Naturally drawn to people, creativity, and recognition. Energized by social interaction and new ideas.',
@@ -346,13 +359,31 @@ export default function DISCAssessment() {
       date: '2025-01-11',
     },
   ])
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle')
+
+  const sendResultsEmail = async (result: Result) => {
+    try {
+      setEmailStatus('sending')
+      const response = await fetch('/api/send-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result }),
+      })
+
+      if (!response.ok) throw new Error('Failed to send email')
+      setEmailStatus('success')
+    } catch (error) {
+      console.error('Failed to send report email', error)
+      setEmailStatus('error')
+    }
+  }
 
   const handleMostSelection = (type: DISCType) => {
     setCurrentMostSelection(type)
     setSelectionPhase('least')
   }
 
-  const handleLeastSelection = (type: DISCType) => {
+  const handleLeastSelection = async (type: DISCType) => {
     const newAnswers = {
       ...answers,
       [currentQuestion]: { most: currentMostSelection!, least: type },
@@ -409,6 +440,7 @@ export default function DISCAssessment() {
         date: new Date().toISOString().split('T')[0],
       }
       setAllResults([...allResults, newResult])
+      sendResultsEmail(newResult)
       setCurrentView('results')
     }
   }
@@ -423,6 +455,7 @@ export default function DISCAssessment() {
     setSelectionPhase('most')
     setCurrentMostSelection(null)
     setCurrentView('intro')
+    setEmailStatus('idle')
   }
 
   // Chart data helpers
@@ -452,117 +485,139 @@ export default function DISCAssessment() {
 
   // Intro Screen
   if (currentView === 'intro') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-slate-800 mb-2">DISC Assessment</h1>
-              <p className="text-slate-600">Natural & Adaptive Behavioral Styles</p>
-            </div>
+    const formValid = Boolean(employeeName && employeeEmail && employeeDept)
 
-            <div className="grid grid-cols-4 gap-3 mb-6">
+    return (
+      <div className="min-h-screen bg-muted/20 py-10">
+        <div className="container max-w-5xl space-y-6">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-wide text-muted-foreground">Assessment</p>
+              <h1 className="text-3xl font-semibold">DISC Natural & Adaptive styles</h1>
+              <p className="text-muted-foreground">Discover how you show up day-to-day and under pressure.</p>
+            </div>
+            <div className="flex gap-2">
               {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
                 <div
                   key={type}
-                  className="text-center p-3 rounded-lg"
-                  style={{ backgroundColor: profileDescriptions[type].bgColor }}
+                  className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold shadow"
+                  style={{
+                    backgroundColor: profileDescriptions[type].bgColor,
+                    color: profileDescriptions[type].color,
+                  }}
                 >
-                  <div className="text-2xl font-bold" style={{ color: profileDescriptions[type].color }}>
-                    {type}
-                  </div>
-                  <div className="text-xs text-slate-600">{profileDescriptions[type].name}</div>
+                  {type}
                 </div>
               ))}
             </div>
+          </div>
 
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6">
-              <h3 className="font-semibold text-slate-800 mb-2">📊 Two Profiles Measured</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="bg-white/70 rounded-lg p-3">
-                  <div className="font-semibold text-emerald-700 mb-1">Natural Style</div>
-                  <p className="text-slate-600 text-xs">How you behave when relaxed and in your comfort zone</p>
+          <div className="grid gap-6 lg:grid-cols-[1.3fr,1fr]">
+            <Card className="border-border/80">
+              <CardHeader>
+                <CardTitle>Tell us about you</CardTitle>
+                <CardDescription>We will use this to personalize your results.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="employeeName">Your Name</Label>
+                    <Input
+                      id="employeeName"
+                      value={employeeName}
+                      onChange={(e) => setEmployeeName(e.target.value)}
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employeeEmail">Email Address</Label>
+                    <Input
+                      id="employeeEmail"
+                      type="email"
+                      value={employeeEmail}
+                      onChange={(e) => setEmployeeEmail(e.target.value)}
+                      placeholder="name@company.com"
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Department</Label>
+                    <Select value={employeeDept || undefined} onValueChange={setEmployeeDept}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['Engineering', 'Marketing', 'Sales', 'Operations', 'Finance', 'HR', 'Executive', 'Other'].map(
+                          (dept) => (
+                            <SelectItem key={dept} value={dept}>
+                              {dept}
+                            </SelectItem>
+                          )
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="bg-white/70 rounded-lg p-3">
-                  <div className="font-semibold text-orange-700 mb-1">Adaptive Style</div>
-                  <p className="text-slate-600 text-xs">
-                    How you shift under stress, pressure, or challenging situations
-                  </p>
+
+                <div className="grid gap-3 rounded-lg border bg-muted/40 p-4 sm:grid-cols-2">
+                  <div>
+                    <p className="text-sm font-medium text-emerald-700">Natural style</p>
+                    <p className="text-sm text-muted-foreground">
+                      How you behave when relaxed and in your comfort zone.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-amber-700">Adaptive style</p>
+                    <p className="text-sm text-muted-foreground">
+                      How you flex under stress, pressure, or challenging situations.
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Your Name *</label>
-                <input
-                  type="text"
-                  value={employeeName}
-                  onChange={(e) => setEmployeeName(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your full name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address *</label>
-                <input
-                  type="email"
-                  value={employeeEmail}
-                  onChange={(e) => setEmployeeEmail(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your email"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Department *</label>
-                <select
-                  value={employeeDept}
-                  onChange={(e) => setEmployeeDept(e.target.value)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select your department</option>
-                  <option value="Engineering">Engineering</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Operations">Operations</option>
-                  <option value="Finance">Finance</option>
-                  <option value="HR">HR</option>
-                  <option value="Executive">Executive</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-            </div>
+                <div className="rounded-lg border bg-card p-4">
+                  <h3 className="text-sm font-semibold text-foreground">How it works</h3>
+                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+                    <li>• {questions.length} questions, each with 4 options.</li>
+                    <li>• Choose the statement MOST like you, then LEAST like you.</li>
+                    <li>• Answer based on your natural tendencies (5-10 minutes).</li>
+                  </ul>
+                </div>
 
-            <div className="bg-slate-50 rounded-lg p-4 mb-6">
-              <h3 className="font-semibold text-slate-800 mb-2">How It Works</h3>
-              <ul className="text-sm text-slate-600 space-y-1">
-                <li>• {questions.length} questions, each with 4 options</li>
-                <li>
-                  • For each question, select which is <strong>MOST</strong> like you
-                </li>
-                <li>
-                  • Then select which is <strong>LEAST</strong> like you
-                </li>
-                <li>• Answer honestly based on your natural tendencies</li>
-                <li>• Takes approximately 10 minutes to complete</li>
-              </ul>
-            </div>
+                <div className="flex flex-wrap gap-3">
+                  <Button className="flex-1 sm:flex-none" onClick={() => setCurrentView('assessment')} disabled={!formValid}>
+                    Start assessment
+                  </Button>
+                  <Button variant="outline" onClick={() => setCurrentView('admin')}>
+                    View analytics
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setCurrentView('assessment')}
-                disabled={!employeeName || !employeeEmail || !employeeDept}
-                className="flex-1 py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Start Assessment
-              </button>
-              <button
-                onClick={() => setCurrentView('admin')}
-                className="py-3 px-6 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition-colors"
-              >
-                Analytics
-              </button>
-            </div>
+            <Card className="border-border/80">
+              <CardHeader>
+                <CardTitle>What we measure</CardTitle>
+                <CardDescription>Quick view of the four DISC styles.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
+                  <div key={type} className="flex items-start gap-3 rounded-lg border p-3">
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-md text-sm font-semibold"
+                      style={{
+                        backgroundColor: profileDescriptions[type].bgColor,
+                        color: profileDescriptions[type].color,
+                      }}
+                    >
+                      {type}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold">{profileDescriptions[type].name}</p>
+                      <p className="text-sm text-muted-foreground">{profileDescriptions[type].traits.join(' • ')}</p>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
@@ -579,113 +634,102 @@ export default function DISCAssessment() {
         : question.options
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            {/* Progress */}
-            <div className="mb-6">
-              <div className="flex justify-between text-sm text-slate-600 mb-2">
-                <span>
-                  Question {currentQuestion + 1} of {questions.length}
-                </span>
-                <span>{Math.round(progress)}%</span>
+      <div className="min-h-screen bg-muted/20 py-10">
+        <div className="container max-w-4xl">
+          <Card className="border-border/80">
+            <CardContent className="space-y-6 pt-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Question {currentQuestion + 1} of {questions.length}
+                  </p>
+                  <h2 className="text-xl font-semibold text-foreground">{question.prompt}</h2>
+                </div>
+                <div className="min-w-[180px]">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Progress</span>
+                    <span>{Math.round(progress)}%</span>
+                  </div>
+                  <Progress value={progress} className="mt-2" />
+                </div>
               </div>
-              <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
 
-            {/* Phase Indicator */}
-            <div
-              className={`text-center py-3 px-4 rounded-xl mb-6 ${
-                selectionPhase === 'most'
-                  ? 'bg-emerald-50 border-2 border-emerald-200'
-                  : 'bg-orange-50 border-2 border-orange-200'
-              }`}
-            >
-              <span
-                className={`text-lg font-bold ${
-                  selectionPhase === 'most' ? 'text-emerald-700' : 'text-orange-700'
+              <div
+                className={`rounded-lg border p-4 ${
+                  selectionPhase === 'most' ? 'bg-emerald-50/60 border-emerald-100' : 'bg-amber-50/70 border-amber-100'
                 }`}
               >
-                {selectionPhase === 'most' ? '✓ Select MOST like you' : '✗ Now select LEAST like you'}
-              </span>
-              <p className="text-xs text-slate-600 mt-1">
-                {selectionPhase === 'most'
-                  ? 'Which statement best describes your natural tendency?'
-                  : 'Which remaining statement is least like you?'}
-              </p>
-            </div>
+                <p
+                  className={`text-sm font-semibold ${
+                    selectionPhase === 'most' ? 'text-emerald-700' : 'text-amber-700'
+                  }`}
+                >
+                  {selectionPhase === 'most' ? 'Select the option MOST like you' : 'Now pick the option LEAST like you'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selectionPhase === 'most'
+                    ? 'Choose the statement that best describes your natural tendency.'
+                    : 'From the remaining statements, which is least like you?'}
+                </p>
+              </div>
 
-            {/* Question */}
-            <h2 className="text-xl font-semibold text-slate-800 mb-6">{question.prompt}</h2>
+              <div className="space-y-3">
+                {(selectionPhase === 'most' ? question.options : availableOptions).map((option, index) => {
+                  const isSelected = selectionPhase === 'least' && currentMostSelection === option.type
+                  if (isSelected) return null
 
-            {/* Options */}
-            <div className="space-y-3">
-              {(selectionPhase === 'most' ? question.options : availableOptions).map((option, index) => {
-                const isSelected = selectionPhase === 'least' && currentMostSelection === option.type
-                if (isSelected) return null
+                  return (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      className="w-full justify-start text-left"
+                      onClick={() =>
+                        selectionPhase === 'most' ? handleMostSelection(option.type) : handleLeastSelection(option.type)
+                      }
+                    >
+                      <span className="text-base text-foreground">{option.text}</span>
+                    </Button>
+                  )
+                })}
+              </div>
 
-                return (
-                  <button
-                    key={index}
-                    onClick={() =>
-                      selectionPhase === 'most'
-                        ? handleMostSelection(option.type)
-                        : handleLeastSelection(option.type)
-                    }
-                    className={`w-full p-4 text-left border-2 rounded-xl transition-all ${
-                      selectionPhase === 'most'
-                        ? 'border-emerald-200 hover:border-emerald-500 hover:bg-emerald-50'
-                        : 'border-orange-200 hover:border-orange-500 hover:bg-orange-50'
-                    }`}
-                  >
-                    <span className="text-slate-700">{option.text}</span>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Selected Most */}
-            {selectionPhase === 'least' && currentMostSelection && (
-              <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <span className="text-sm text-emerald-700">
+              {selectionPhase === 'least' && currentMostSelection && (
+                <div className="rounded-md border border-emerald-100 bg-emerald-50/70 p-3 text-sm text-emerald-700">
                   ✓ Most like you:{' '}
                   <strong>{question.options.find((o) => o.type === currentMostSelection)?.text}</strong>
-                </span>
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* Navigation */}
-            <div className="flex justify-between mt-6">
-              {currentQuestion > 0 && selectionPhase === 'most' && (
-                <button
-                  onClick={() => {
-                    setCurrentQuestion(currentQuestion - 1)
-                    setCurrentMostSelection(null)
-                    setSelectionPhase('most')
-                  }}
-                  className="text-slate-600 hover:text-slate-800"
-                >
-                  ← Previous
-                </button>
-              )}
-              {selectionPhase === 'least' && (
-                <button
-                  onClick={() => {
-                    setSelectionPhase('most')
-                    setCurrentMostSelection(null)
-                  }}
-                  className="text-slate-600 hover:text-slate-800"
-                >
-                  ← Change "Most" selection
-                </button>
-              )}
-            </div>
-          </div>
+              <div className="flex justify-between text-sm text-muted-foreground">
+                {currentQuestion > 0 && selectionPhase === 'most' ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setCurrentQuestion(currentQuestion - 1)
+                      setCurrentMostSelection(null)
+                      setSelectionPhase('most')
+                    }}
+                  >
+                    ← Previous
+                  </Button>
+                ) : (
+                  <span />
+                )}
+
+                {selectionPhase === 'least' && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setSelectionPhase('most')
+                      setCurrentMostSelection(null)
+                    }}
+                  >
+                    ← Change “Most” selection
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     )
@@ -701,14 +745,31 @@ export default function DISCAssessment() {
     const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-5xl mx-auto">
+      <div className="min-h-screen bg-muted/20 py-10">
+        <div className="container max-w-5xl">
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="text-center mb-8">
               <h1 className="text-3xl font-bold text-slate-800 mb-2">Your DISC Profile</h1>
               <p className="text-slate-600">
                 {employeeName} • {employeeDept}
               </p>
+              <div className="mt-3 flex justify-center">
+                {emailStatus === 'sending' && (
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    Emailing results to ngardner@dtgpower.com...
+                  </span>
+                )}
+                {emailStatus === 'success' && (
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Report emailed to ngardner@dtgpower.com
+                  </span>
+                )}
+                {emailStatus === 'error' && (
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                    Email failed. Please retry after checking server email settings.
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Primary Types */}
@@ -895,18 +956,12 @@ export default function DISCAssessment() {
             </div>
 
             <div className="flex gap-3">
-              <button
-                onClick={resetAssessment}
-                className="flex-1 py-3 px-6 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition-colors"
-              >
-                Take Again
-              </button>
-              <button
-                onClick={() => setCurrentView('admin')}
-                className="flex-1 py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                View Team Analytics
-              </button>
+              <Button variant="secondary" className="flex-1" onClick={resetAssessment}>
+                Take again
+              </Button>
+              <Button className="flex-1" onClick={() => setCurrentView('admin')}>
+                View team analytics
+              </Button>
             </div>
           </div>
         </div>
@@ -945,8 +1000,8 @@ export default function DISCAssessment() {
     const shifters = allResults.filter((r) => r.primaryNatural !== r.primaryAdaptive)
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-muted/20 py-10">
+        <div className="container max-w-7xl">
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -955,12 +1010,7 @@ export default function DISCAssessment() {
                   {allResults.length} assessments • Natural & Adaptive Profiles
                 </p>
               </div>
-              <button
-                onClick={resetAssessment}
-                className="py-2 px-4 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-              >
-                + New Assessment
-              </button>
+              <Button onClick={resetAssessment}>+ New Assessment</Button>
             </div>
 
             {/* Team Distribution */}
