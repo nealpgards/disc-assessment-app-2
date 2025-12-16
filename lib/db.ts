@@ -11,7 +11,7 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Initialize database connection
-let db: Database
+let db: InstanceType<typeof Database>
 try {
   db = new Database(dbPath)
   
