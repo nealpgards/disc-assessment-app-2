@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   BarChart,
   Bar,
@@ -624,109 +624,14 @@ export default function DISCAssessment() {
   const [currentDrivingForceQuestion, setCurrentDrivingForceQuestion] = useState(0)
   const [drivingForceAnswers, setDrivingForceAnswers] = useState<Record<number, DrivingForceType>>({})
   const [drivingForceScores, setDrivingForceScores] = useState<DrivingForceResult | null>(null)
-  const [allResults, setAllResults] = useState<Result[]>([
-    // Sample data for demo
-    {
-      name: 'Alex Chen',
-      dept: 'Engineering',
-      natural: { D: 40, I: 20, S: 15, C: 25 },
-      adaptive: { D: 55, I: 15, S: 10, C: 20 },
-      primaryNatural: 'D',
-      primaryAdaptive: 'D',
-      date: '2025-01-15',
-      drivingForces: {
-        scores: { KI: 2, KN: 8, US: 3, UR: 7, SO: 6, SH: 4, OI: 5, OA: 5, PC: 4, PD: 6, MR: 3, MS: 7 },
-        primaryForces: {
-          Knowledge: 'KN',
-          Utility: 'UR',
-          Surroundings: 'SO',
-          Others: 'OI',
-          Power: 'PD',
-          Methodologies: 'MS',
-        },
-      },
-    },
-    {
-      name: 'Jordan Smith',
-      dept: 'Marketing',
-      natural: { D: 15, I: 45, S: 25, C: 15 },
-      adaptive: { D: 20, I: 35, S: 30, C: 15 },
-      primaryNatural: 'I',
-      primaryAdaptive: 'I',
-      date: '2025-01-14',
-      drivingForces: {
-        scores: { KI: 5, KN: 5, US: 4, UR: 6, SO: 3, SH: 7, OI: 3, OA: 7, PC: 5, PD: 5, MR: 8, MS: 2 },
-        primaryForces: {
-          Knowledge: 'KN',
-          Utility: 'UR',
-          Surroundings: 'SH',
-          Others: 'OA',
-          Power: 'PC',
-          Methodologies: 'MR',
-        },
-      },
-    },
-    {
-      name: 'Sam Williams',
-      dept: 'Operations',
-      natural: { D: 20, I: 15, S: 45, C: 20 },
-      adaptive: { D: 15, I: 10, S: 55, C: 20 },
-      primaryNatural: 'S',
-      primaryAdaptive: 'S',
-      date: '2025-01-13',
-      drivingForces: {
-        scores: { KI: 6, KN: 4, US: 7, UR: 3, SO: 4, SH: 6, OI: 2, OA: 8, PC: 7, PD: 3, MR: 2, MS: 8 },
-        primaryForces: {
-          Knowledge: 'KI',
-          Utility: 'US',
-          Surroundings: 'SH',
-          Others: 'OA',
-          Power: 'PC',
-          Methodologies: 'MS',
-        },
-      },
-    },
-    {
-      name: 'Taylor Brown',
-      dept: 'Finance',
-      natural: { D: 15, I: 15, S: 20, C: 50 },
-      adaptive: { D: 10, I: 10, S: 15, C: 65 },
-      primaryNatural: 'C',
-      primaryAdaptive: 'C',
-      date: '2025-01-12',
-      drivingForces: {
-        scores: { KI: 3, KN: 7, US: 2, UR: 8, SO: 7, SH: 3, OI: 6, OA: 4, PC: 3, PD: 7, MR: 2, MS: 8 },
-        primaryForces: {
-          Knowledge: 'KN',
-          Utility: 'UR',
-          Surroundings: 'SO',
-          Others: 'OI',
-          Power: 'PD',
-          Methodologies: 'MS',
-        },
-      },
-    },
-    {
-      name: 'Morgan Davis',
-      dept: 'Sales',
-      natural: { D: 35, I: 35, S: 15, C: 15 },
-      adaptive: { D: 45, I: 25, S: 15, C: 15 },
-      primaryNatural: 'D',
-      primaryAdaptive: 'D',
-      date: '2025-01-11',
-      drivingForces: {
-        scores: { KI: 4, KN: 6, US: 3, UR: 7, SO: 5, SH: 5, OI: 6, OA: 4, PC: 2, PD: 8, MR: 7, MS: 3 },
-        primaryForces: {
-          Knowledge: 'KN',
-          Utility: 'UR',
-          Surroundings: 'SO',
-          Others: 'OI',
-          Power: 'PD',
-          Methodologies: 'MR',
-        },
-      },
-    },
-  ])
+  const [allResults, setAllResults] = useState<Result[]>([])
+  const [insights, setInsights] = useState<{
+    compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
+    teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
+    communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+  } | null>(null)
+  const [loadingResults, setLoadingResults] = useState(false)
+  const [loadingInsights, setLoadingInsights] = useState(false)
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle')
   const barChartRef = useRef<HTMLDivElement>(null)
   const radarChartRef = useRef<HTMLDivElement>(null)
@@ -791,7 +696,7 @@ export default function DISCAssessment() {
     }
   }
 
-  const handleDrivingForceSelection = (selectedType: DrivingForceType) => {
+  const handleDrivingForceSelection = async (selectedType: DrivingForceType) => {
     const newAnswers = {
       ...drivingForceAnswers,
       [currentDrivingForceQuestion]: selectedType,
@@ -849,10 +754,63 @@ export default function DISCAssessment() {
         drivingForces: drivingForceResult,
         date: new Date().toISOString().split('T')[0],
       }
+      
+      // Save to database via API
+      try {
+        await fetch('/api/results', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: employeeName,
+            email: employeeEmail,
+            dept: employeeDept,
+            natural: scores.natural,
+            adaptive: scores.adaptive,
+            primaryNatural: scores.primaryNatural,
+            primaryAdaptive: scores.primaryAdaptive,
+            drivingForces: drivingForceResult,
+          }),
+        })
+      } catch (error) {
+        console.error('Failed to save result to database:', error)
+        // Continue to results view even if save fails
+      }
+      
       setAllResults([...allResults, newResult])
       setCurrentView('results')
     }
   }
+
+  // Fetch results from API when admin view is accessed
+  useEffect(() => {
+    if (currentView === 'admin') {
+      setLoadingResults(true)
+      fetch('/api/results')
+        .then((res) => res.json())
+        .then((data) => {
+          setAllResults(data)
+          setLoadingResults(false)
+        })
+        .catch((error) => {
+          console.error('Failed to fetch results:', error)
+          setLoadingResults(false)
+        })
+
+      setLoadingInsights(true)
+      fetch('/api/insights')
+        .then((res) => res.json())
+        .then((data) => {
+          setInsights(data)
+          setLoadingInsights(false)
+        })
+        .catch((error) => {
+          console.error('Failed to fetch insights:', error)
+          setLoadingInsights(false)
+        })
+    }
+  }, [currentView])
 
   const resetAssessment = () => {
     setCurrentQuestion(0)
@@ -1046,6 +1004,13 @@ export default function DISCAssessment() {
                     disabled={!formValid}
                   >
                     Start assessment
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 sm:flex-none"
+                    onClick={() => setCurrentView('admin')}
+                  >
+                    View Admin Dashboard
                   </Button>
                 </div>
               </CardContent>
@@ -1726,6 +1691,20 @@ export default function DISCAssessment() {
 
   // Admin/Analytics Screen
   if (currentView === 'admin') {
+    if (loadingResults) {
+      return (
+        <div className="min-h-screen bg-muted/20 py-10">
+          <div className="container max-w-7xl">
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
+              <div className="text-center py-20">
+                <p className="text-slate-600">Loading team analytics...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     const teamNaturalDist = (['D', 'I', 'S', 'C'] as DISCType[]).map((type) => ({
       name: type,
       fullName: profileDescriptions[type].name,
@@ -1753,6 +1732,28 @@ export default function DISCAssessment() {
     })
 
     const shifters = allResults.filter((r) => r.primaryNatural !== r.primaryAdaptive)
+
+    if (allResults.length === 0 && !loadingResults) {
+      return (
+        <div className="min-h-screen bg-muted/20 py-10">
+          <div className="container max-w-7xl">
+            <div className="bg-white rounded-2xl shadow-2xl p-8">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
+                  <p className="text-slate-600">No assessments yet</p>
+                </div>
+                <Button onClick={resetAssessment}>+ New Assessment</Button>
+              </div>
+              <div className="text-center py-20">
+                <p className="text-slate-500 mb-4">No assessment results found.</p>
+                <Button onClick={resetAssessment}>Start First Assessment</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="min-h-screen bg-muted/20 py-10">
@@ -2076,6 +2077,157 @@ export default function DISCAssessment() {
                         }
                       )}
                     </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Department Collaboration Insights */}
+            {insights && (
+              <>
+                <div className="border-t-2 border-slate-200 pt-8 mb-8">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Insights</h2>
+
+                  {/* Compatibility Matrix */}
+                  <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                    <h3 className="font-semibold text-slate-800 mb-4">Department Compatibility Matrix</h3>
+                    {loadingInsights ? (
+                      <p className="text-slate-500">Loading compatibility analysis...</p>
+                    ) : insights.compatibility.length > 0 ? (
+                      <div className="space-y-4">
+                        {insights.compatibility.map((comp, idx) => (
+                          <div key={idx} className="bg-white rounded-lg p-4 border">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-3">
+                                <span className="font-semibold text-slate-700">{comp.dept1}</span>
+                                <span className="text-slate-400">↔</span>
+                                <span className="font-semibold text-slate-700">{comp.dept2}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="text-2xl font-bold" style={{ color: comp.score >= 80 ? '#10b981' : comp.score >= 60 ? '#f59e0b' : '#ef4444' }}>
+                                  {comp.score}%
+                                </div>
+                                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold ${
+                                  comp.score >= 80 ? 'bg-emerald-500' : comp.score >= 60 ? 'bg-amber-500' : 'bg-red-500'
+                                }`}>
+                                  {comp.score >= 80 ? '✓' : comp.score >= 60 ? '~' : '!'}
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-sm text-slate-600">{comp.reasoning}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500">Need at least 2 departments for compatibility analysis</p>
+                    )}
+                  </div>
+
+                  {/* Team Composition Analysis */}
+                  <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                    <h3 className="font-semibold text-slate-800 mb-4">Team Composition Analysis</h3>
+                    {loadingInsights ? (
+                      <p className="text-slate-500">Loading team composition analysis...</p>
+                    ) : insights.teamComposition.length > 0 ? (
+                      <div className="grid md:grid-cols-2 gap-4">
+                        {insights.teamComposition.map((comp, idx) => (
+                          <div key={idx} className="bg-white rounded-lg p-4 border">
+                            <h4 className="font-semibold text-slate-700 mb-3">{comp.department}</h4>
+                            
+                            {comp.strengths.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold text-emerald-700 mb-1">Strengths:</p>
+                                <ul className="text-sm text-slate-600 space-y-1">
+                                  {comp.strengths.map((strength, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <span className="text-emerald-500">✓</span>
+                                      <span>{strength}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {comp.gaps.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold text-amber-700 mb-1">Potential Gaps:</p>
+                                <ul className="text-sm text-slate-600 space-y-1">
+                                  {comp.gaps.map((gap, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <span className="text-amber-500">⚠</span>
+                                      <span>{gap}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {comp.recommendations.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-blue-700 mb-1">Recommendations:</p>
+                                <ul className="text-sm text-slate-600 space-y-1">
+                                  {comp.recommendations.map((rec, i) => (
+                                    <li key={i} className="flex items-start gap-2">
+                                      <span className="text-blue-500">💡</span>
+                                      <span>{rec}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500">No team composition data available</p>
+                    )}
+                  </div>
+
+                  {/* Communication Style Insights */}
+                  <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                    <h3 className="font-semibold text-slate-800 mb-4">Communication Style Insights</h3>
+                    {loadingInsights ? (
+                      <p className="text-slate-500">Loading communication insights...</p>
+                    ) : insights.communicationInsights.length > 0 ? (
+                      <div className="space-y-4">
+                        {insights.communicationInsights.map((insight, idx) => (
+                          <div key={idx} className="bg-white rounded-lg p-4 border">
+                            <div className="flex items-center gap-3 mb-3">
+                              <h4 className="font-semibold text-slate-700">{insight.department}</h4>
+                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                                {insight.style}
+                              </span>
+                            </div>
+
+                            <div className="mb-3">
+                              <p className="text-xs font-semibold text-slate-600 mb-2">Communication Preferences:</p>
+                              <ul className="text-sm text-slate-600 space-y-1">
+                                {insight.preferences.map((pref, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-slate-400">•</span>
+                                    <span>{pref}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+
+                            <div>
+                              <p className="text-xs font-semibold text-purple-700 mb-2">Inter-Department Recommendations:</p>
+                              <ul className="text-sm text-slate-600 space-y-1">
+                                {insight.recommendations.map((rec, i) => (
+                                  <li key={i} className="flex items-start gap-2">
+                                    <span className="text-purple-500">→</span>
+                                    <span>{rec}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500">No communication insights available</p>
+                    )}
                   </div>
                 </div>
               </>
