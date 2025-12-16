@@ -59,8 +59,9 @@ export async function POST(request: NextRequest) {
     )
   } catch (error) {
     console.error('Error saving result:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to save result' },
+      { error: 'Failed to save result', details: errorMessage },
       { status: 500 }
     )
   }

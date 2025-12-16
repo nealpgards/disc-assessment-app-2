@@ -11,6 +11,13 @@ export async function GET() {
     const teamComposition = analyzeTeamComposition()
     const communicationInsights = getCommunicationInsights()
 
+    // Debug logging
+    console.log('Insights calculated:', {
+      compatibilityCount: compatibility.length,
+      teamCompositionCount: teamComposition.length,
+      communicationInsightsCount: communicationInsights.length,
+    })
+
     return NextResponse.json({
       compatibility,
       teamComposition,

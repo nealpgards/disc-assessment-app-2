@@ -634,6 +634,8 @@ export default function DISCAssessment() {
   const [loadingResults, setLoadingResults] = useState(false)
   const [loadingInsights, setLoadingInsights] = useState(false)
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle')
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
+  const [saveError, setSaveError] = useState<string | null>(null)
   const barChartRef = useRef<HTMLDivElement>(null)
   const radarChartRef = useRef<HTMLDivElement>(null)
 
@@ -757,8 +759,11 @@ export default function DISCAssessment() {
       }
       
       // Save to database via API
+      setSaveStatus('saving')
+      setSaveError(null)
+      
       try {
-        await fetch('/api/results', {
+        const response = await fetch('/api/results', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -774,9 +779,23 @@ export default function DISCAssessment() {
             drivingForces: drivingForceResult,
           }),
         })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          console.error('Failed to save result to database:', errorData)
+          setSaveStatus('error')
+          setSaveError(errorData.error || 'Failed to save results. Please try again.')
+        } else {
+          const result = await response.json()
+          console.log('Result saved successfully:', result)
+          setSaveStatus('success')
+          // Reset success status after 3 seconds
+          setTimeout(() => setSaveStatus('idle'), 3000)
+        }
       } catch (error) {
         console.error('Failed to save result to database:', error)
-        // Continue to results view even if save fails
+        setSaveStatus('error')
+        setSaveError('Failed to save results. Please check your connection and try again.')
       }
       
       setAllResults([...allResults, newResult])
@@ -828,6 +847,8 @@ export default function DISCAssessment() {
     setDrivingForceAnswers({})
     setDrivingForceScores(null)
     setShuffledQuestions([])
+    setSaveStatus('idle')
+    setSaveError(null)
   }
 
   const handleExportPDF = async () => {
@@ -1296,6 +1317,27 @@ export default function DISCAssessment() {
               <p className="text-slate-600">
                 {employeeName} • {employeeDept}
               </p>
+              {saveStatus === 'saving' && (
+                <div className="mt-4">
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    Saving results...
+                  </span>
+                </div>
+              )}
+              {saveStatus === 'success' && (
+                <div className="mt-4">
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    ✓ Results saved successfully!
+                  </span>
+                </div>
+              )}
+              {saveStatus === 'error' && saveError && (
+                <div className="mt-4">
+                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
+                    ⚠ {saveError}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Primary Types */}

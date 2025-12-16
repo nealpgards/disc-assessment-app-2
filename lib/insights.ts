@@ -72,15 +72,6 @@ function normalizeDepartmentName(dept: string): string {
   return dept.trim()
 }
 
-// Get canonical department name (use the first occurrence as the canonical name)
-function getCanonicalDepartmentName(dept: string, allResults: ResultRow[]): string {
-  const normalized = normalizeDepartmentName(dept)
-  // Find the first occurrence of this department (case-insensitive, trimmed)
-  const firstMatch = allResults.find(
-    (r) => normalizeDepartmentName(r.department).toLowerCase() === normalized.toLowerCase()
-  )
-  return firstMatch ? normalizeDepartmentName(firstMatch.department) : normalized
-}
 
 export function getDepartmentData(): DepartmentData[] {
   const results = getAllResults()
@@ -103,10 +94,18 @@ export function getDepartmentData(): DepartmentData[] {
     departmentMap.get(normalized)!.push(r)
   })
   
-  // Get canonical names for each normalized department
+  // Debug logging
+  console.log('Department grouping:', {
+    totalResults: results.length,
+    validResults: validResults.length,
+    uniqueDepartments: departmentMap.size,
+    departmentNames: Array.from(departmentMap.keys()),
+  })
+  
+  // Get canonical names for each normalized department (use first occurrence's original name)
   const departments = Array.from(departmentMap.keys()).map((normalized) => {
     const firstResult = departmentMap.get(normalized)![0]
-    return getCanonicalDepartmentName(firstResult.department, validResults)
+    return normalizeDepartmentName(firstResult.department) // Use trimmed version of first occurrence
   })
 
   return departments.map((dept) => {
@@ -165,6 +164,17 @@ function getPrimaryType(scores: Scores): DISCType {
 export function calculateDepartmentCompatibility(): CompatibilityScore[] {
   const deptData = getDepartmentData()
   const compatibilities: CompatibilityScore[] = []
+
+  // Need at least 2 departments for compatibility analysis
+  if (deptData.length < 2) {
+    console.log('Not enough departments for compatibility analysis:', {
+      departmentCount: deptData.length,
+      departments: deptData.map(d => d.department),
+    })
+    return []
+  }
+
+  console.log('Calculating compatibility for departments:', deptData.map(d => d.department))
 
   for (let i = 0; i < deptData.length; i++) {
     for (let j = i + 1; j < deptData.length; j++) {

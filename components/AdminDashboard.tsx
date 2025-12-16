@@ -260,6 +260,11 @@ export default function AdminDashboard() {
     fetch('/api/insights')
       .then((res) => res.json())
       .then((data) => {
+        console.log('Insights data received:', {
+          compatibility: data.compatibility?.length || 0,
+          teamComposition: data.teamComposition?.length || 0,
+          communicationInsights: data.communicationInsights?.length || 0,
+        })
         setInsights(data)
         setLoadingInsights(false)
       })
