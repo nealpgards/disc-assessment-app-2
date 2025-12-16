@@ -73,6 +73,7 @@ function normalizeDepartmentName(dept: string): string {
 }
 
 
+// Export for use in API routes
 export function getDepartmentData(): DepartmentData[] {
   const results = getAllResults()
   
@@ -162,196 +163,295 @@ function getPrimaryType(scores: Scores): DISCType {
 }
 
 export function calculateDepartmentCompatibility(): CompatibilityScore[] {
-  const deptData = getDepartmentData()
-  const compatibilities: CompatibilityScore[] = []
+  try {
+    const deptData = getDepartmentData()
+    const compatibilities: CompatibilityScore[] = []
 
-  // Need at least 2 departments for compatibility analysis
-  if (deptData.length < 2) {
-    console.log('Not enough departments for compatibility analysis:', {
-      departmentCount: deptData.length,
-      departments: deptData.map(d => d.department),
+    // Need at least 2 departments for compatibility analysis
+    if (deptData.length < 2) {
+      console.log('Not enough departments for compatibility analysis:', {
+        departmentCount: deptData.length,
+        departments: deptData.map(d => d.department),
+      })
+      return []
+    }
+
+    // Validate department data
+    const validDeptData = deptData.filter(dept => {
+      if (!dept.department || dept.count === 0) {
+        console.warn('Invalid department data:', dept)
+        return false
+      }
+      // Validate scores exist and are numbers
+      const hasValidScores = Object.values(dept.avgNatural).every(
+        score => typeof score === 'number' && !isNaN(score) && score >= 0
+      )
+      if (!hasValidScores) {
+        console.warn('Invalid scores for department:', dept.department)
+        return false
+      }
+      return true
     })
+
+    if (validDeptData.length < 2) {
+      console.log('Not enough valid departments for compatibility analysis:', {
+        total: deptData.length,
+        valid: validDeptData.length,
+      })
+      return []
+    }
+
+    console.log('Calculating compatibility for departments:', validDeptData.map(d => d.department))
+
+    for (let i = 0; i < validDeptData.length; i++) {
+      for (let j = i + 1; j < validDeptData.length; j++) {
+        try {
+          const dept1 = validDeptData[i]
+          const dept2 = validDeptData[j]
+
+          // Get primary types
+          const dept1Primary = getPrimaryType(dept1.avgNatural)
+          const dept2Primary = getPrimaryType(dept2.avgNatural)
+
+          // Validate primary types
+          if (!compatibilityMatrix[dept1Primary] || !compatibilityMatrix[dept1Primary][dept2Primary]) {
+            console.warn(`Invalid compatibility matrix lookup for ${dept1Primary}-${dept2Primary}`)
+            continue
+          }
+
+          // Calculate compatibility score
+          const baseScore = compatibilityMatrix[dept1Primary][dept2Primary]
+
+          // Adjust based on score similarity (more balanced departments work better)
+          const dept1Max = Math.max(...Object.values(dept1.avgNatural))
+          const dept2Max = Math.max(...Object.values(dept2.avgNatural))
+          const dept1Balance = dept1Max > 0 ? 1 - dept1Max / 100 : 0
+          const dept2Balance = dept2Max > 0 ? 1 - dept2Max / 100 : 0
+          const balanceBonus = (dept1Balance + dept2Balance) / 2 * 0.2
+
+          const finalScore = Math.min(1, Math.max(0, baseScore + balanceBonus))
+
+          compatibilities.push({
+            dept1: dept1.department,
+            dept2: dept2.department,
+            score: Math.round(finalScore * 100),
+            reasoning: getCompatibilityReasoning(dept1Primary, dept2Primary),
+          })
+        } catch (pairError) {
+          console.error(`Error calculating compatibility for pair ${i}-${j}:`, pairError)
+          // Continue with other pairs
+        }
+      }
+    }
+
+    return compatibilities.sort((a, b) => b.score - a.score)
+  } catch (error) {
+    console.error('Error in calculateDepartmentCompatibility:', error)
     return []
   }
-
-  console.log('Calculating compatibility for departments:', deptData.map(d => d.department))
-
-  for (let i = 0; i < deptData.length; i++) {
-    for (let j = i + 1; j < deptData.length; j++) {
-      const dept1 = deptData[i]
-      const dept2 = deptData[j]
-
-      // Get primary types
-      const dept1Primary = getPrimaryType(dept1.avgNatural)
-      const dept2Primary = getPrimaryType(dept2.avgNatural)
-
-      // Calculate compatibility score
-      const baseScore = compatibilityMatrix[dept1Primary][dept2Primary]
-
-      // Adjust based on score similarity (more balanced departments work better)
-      const dept1Balance = 1 - Math.max(...Object.values(dept1.avgNatural)) / 100
-      const dept2Balance = 1 - Math.max(...Object.values(dept2.avgNatural)) / 100
-      const balanceBonus = (dept1Balance + dept2Balance) / 2 * 0.2
-
-      const finalScore = Math.min(1, baseScore + balanceBonus)
-
-      compatibilities.push({
-        dept1: dept1.department,
-        dept2: dept2.department,
-        score: Math.round(finalScore * 100),
-        reasoning: getCompatibilityReasoning(dept1Primary, dept2Primary),
-      })
-    }
-  }
-
-  return compatibilities.sort((a, b) => b.score - a.score)
 }
 
 export function analyzeTeamComposition(): TeamComposition[] {
-  const deptData = getDepartmentData()
-  const compositions: TeamComposition[] = []
+  try {
+    const deptData = getDepartmentData()
+    const compositions: TeamComposition[] = []
 
-  deptData.forEach((dept) => {
-    const primaryType = getPrimaryType(dept.avgNatural)
-    const strengths: string[] = []
-    const gaps: string[] = []
-    const recommendations: string[] = []
+    deptData.forEach((dept) => {
+      try {
+        // Validate department data
+        if (!dept.department || dept.count === 0) {
+          console.warn('Skipping invalid department:', dept)
+          return
+        }
 
-    // Analyze strengths
-    if (dept.avgNatural.D > 30) {
-      strengths.push('Strong drive and results orientation')
-    }
-    if (dept.avgNatural.I > 30) {
-      strengths.push('Excellent collaboration and communication')
-    }
-    if (dept.avgNatural.S > 30) {
-      strengths.push('Reliable and stable team members')
-    }
-    if (dept.avgNatural.C > 30) {
-      strengths.push('High attention to detail and quality')
-    }
+        // Validate scores
+        if (!dept.avgNatural || typeof dept.avgNatural.D !== 'number') {
+          console.warn('Invalid scores for department:', dept.department)
+          return
+        }
 
-    // Identify gaps
-    if (dept.avgNatural.D < 20) {
-      gaps.push('May lack assertiveness and drive')
-      recommendations.push('Consider pairing with high-D individuals for projects requiring quick decisions')
-    }
-    if (dept.avgNatural.I < 20) {
-      gaps.push('May struggle with relationship building')
-      recommendations.push('Add team members who excel at networking and collaboration')
-    }
-    if (dept.avgNatural.S < 20) {
-      gaps.push('May lack stability and consistency')
-      recommendations.push('Include steady team members to provide structure')
-    }
-    if (dept.avgNatural.C < 20) {
-      gaps.push('May overlook details and quality control')
-      recommendations.push('Ensure quality checks and detail-oriented processes')
-    }
+        const primaryType = getPrimaryType(dept.avgNatural)
+        const strengths: string[] = []
+        const gaps: string[] = []
+        const recommendations: string[] = []
 
-    // Cross-functional recommendations
-    if (primaryType === 'D') {
-      recommendations.push('Works well with Steadiness-focused teams for balanced execution')
-    } else if (primaryType === 'I') {
-      recommendations.push('Complements Conscientiousness teams for thorough innovation')
-    } else if (primaryType === 'S') {
-      recommendations.push('Benefits from Dominance teams for driving change')
-    } else if (primaryType === 'C') {
-      recommendations.push('Pairs well with Influence teams for creative problem-solving')
-    }
+        // Analyze strengths
+        if (dept.avgNatural.D > 30) {
+          strengths.push('Strong drive and results orientation')
+        }
+        if (dept.avgNatural.I > 30) {
+          strengths.push('Excellent collaboration and communication')
+        }
+        if (dept.avgNatural.S > 30) {
+          strengths.push('Reliable and stable team members')
+        }
+        if (dept.avgNatural.C > 30) {
+          strengths.push('High attention to detail and quality')
+        }
 
-    compositions.push({
-      department: dept.department,
-      strengths,
-      gaps,
-      recommendations,
-    })
-  })
+        // Identify gaps
+        if (dept.avgNatural.D < 20) {
+          gaps.push('May lack assertiveness and drive')
+          recommendations.push('Consider pairing with high-D individuals for projects requiring quick decisions')
+        }
+        if (dept.avgNatural.I < 20) {
+          gaps.push('May struggle with relationship building')
+          recommendations.push('Add team members who excel at networking and collaboration')
+        }
+        if (dept.avgNatural.S < 20) {
+          gaps.push('May lack stability and consistency')
+          recommendations.push('Include steady team members to provide structure')
+        }
+        if (dept.avgNatural.C < 20) {
+          gaps.push('May overlook details and quality control')
+          recommendations.push('Ensure quality checks and detail-oriented processes')
+        }
 
-  return compositions
-}
+        // Cross-functional recommendations
+        if (primaryType === 'D') {
+          recommendations.push('Works well with Steadiness-focused teams for balanced execution')
+        } else if (primaryType === 'I') {
+          recommendations.push('Complements Conscientiousness teams for thorough innovation')
+        } else if (primaryType === 'S') {
+          recommendations.push('Benefits from Dominance teams for driving change')
+        } else if (primaryType === 'C') {
+          recommendations.push('Pairs well with Influence teams for creative problem-solving')
+        }
 
-export function getCommunicationInsights(): CommunicationInsight[] {
-  const deptData = getDepartmentData()
-  const insights: CommunicationInsight[] = []
-
-  const communicationStyles: Record<DISCType, { style: string; preferences: string[] }> = {
-    D: {
-      style: 'Direct and Results-Focused',
-      preferences: [
-        'Brief, to-the-point communication',
-        'Focus on outcomes and action items',
-        'Prefer written summaries over long meetings',
-        'Appreciate quick decision-making',
-      ],
-    },
-    I: {
-      style: 'Enthusiastic and Relationship-Focused',
-      preferences: [
-        'Engaging, story-driven communication',
-        'Prefer face-to-face or video calls',
-        'Value recognition and positive feedback',
-        'Enjoy collaborative brainstorming sessions',
-      ],
-    },
-    S: {
-      style: 'Patient and Supportive',
-      preferences: [
-        'Clear, step-by-step instructions',
-        'Prefer structured meetings with agendas',
-        'Value consistency and follow-through',
-        'Appreciate time to process information',
-      ],
-    },
-    C: {
-      style: 'Precise and Data-Driven',
-      preferences: [
-        'Detailed documentation and data',
-        'Prefer written communication for accuracy',
-        'Value thorough analysis before decisions',
-        'Appreciate well-organized information',
-      ],
-    },
-  }
-
-  deptData.forEach((dept) => {
-    const primaryType = getPrimaryType(dept.avgNatural)
-    const styleInfo = communicationStyles[primaryType]
-    const recommendations: string[] = []
-
-    // Generate recommendations based on other departments
-    deptData.forEach((otherDept) => {
-      if (otherDept.department === dept.department) return
-
-      const otherPrimary = getPrimaryType(otherDept.avgNatural)
-
-      if (primaryType === 'D' && otherPrimary === 'S') {
-        recommendations.push(
-          `When communicating with ${otherDept.department}: Provide context and allow time for processing`
-        )
-      } else if (primaryType === 'S' && otherPrimary === 'D') {
-        recommendations.push(
-          `When communicating with ${otherDept.department}: Lead with key points and action items`
-        )
-      } else if (primaryType === 'I' && otherPrimary === 'C') {
-        recommendations.push(
-          `When communicating with ${otherDept.department}: Include data and specific details`
-        )
-      } else if (primaryType === 'C' && otherPrimary === 'I') {
-        recommendations.push(
-          `When communicating with ${otherDept.department}: Use engaging examples and stories`
-        )
+        compositions.push({
+          department: dept.department,
+          strengths,
+          gaps,
+          recommendations,
+        })
+      } catch (deptError) {
+        console.error(`Error analyzing team composition for department ${dept.department}:`, deptError)
+        // Continue with other departments
       }
     })
 
-    insights.push({
-      department: dept.department,
-      style: styleInfo.style,
-      preferences: styleInfo.preferences,
-      recommendations: recommendations.length > 0 ? recommendations : ['Standard communication practices apply'],
-    })
-  })
+    return compositions
+  } catch (error) {
+    console.error('Error in analyzeTeamComposition:', error)
+    return []
+  }
+}
 
-  return insights
+export function getCommunicationInsights(): CommunicationInsight[] {
+  try {
+    const deptData = getDepartmentData()
+    const insights: CommunicationInsight[] = []
+
+    const communicationStyles: Record<DISCType, { style: string; preferences: string[] }> = {
+      D: {
+        style: 'Direct and Results-Focused',
+        preferences: [
+          'Brief, to-the-point communication',
+          'Focus on outcomes and action items',
+          'Prefer written summaries over long meetings',
+          'Appreciate quick decision-making',
+        ],
+      },
+      I: {
+        style: 'Enthusiastic and Relationship-Focused',
+        preferences: [
+          'Engaging, story-driven communication',
+          'Prefer face-to-face or video calls',
+          'Value recognition and positive feedback',
+          'Enjoy collaborative brainstorming sessions',
+        ],
+      },
+      S: {
+        style: 'Patient and Supportive',
+        preferences: [
+          'Clear, step-by-step instructions',
+          'Prefer structured meetings with agendas',
+          'Value consistency and follow-through',
+          'Appreciate time to process information',
+        ],
+      },
+      C: {
+        style: 'Precise and Data-Driven',
+        preferences: [
+          'Detailed documentation and data',
+          'Prefer written communication for accuracy',
+          'Value thorough analysis before decisions',
+          'Appreciate well-organized information',
+        ],
+      },
+    }
+
+    deptData.forEach((dept) => {
+      try {
+        // Validate department data
+        if (!dept.department || dept.count === 0) {
+          console.warn('Skipping invalid department:', dept)
+          return
+        }
+
+        // Validate scores
+        if (!dept.avgNatural || typeof dept.avgNatural.D !== 'number') {
+          console.warn('Invalid scores for department:', dept.department)
+          return
+        }
+
+        const primaryType = getPrimaryType(dept.avgNatural)
+        const styleInfo = communicationStyles[primaryType]
+        
+        if (!styleInfo) {
+          console.warn(`No communication style found for type: ${primaryType}`)
+          return
+        }
+
+        const recommendations: string[] = []
+
+        // Generate recommendations based on other departments
+        deptData.forEach((otherDept) => {
+          if (otherDept.department === dept.department) return
+          if (!otherDept.avgNatural) return
+
+          try {
+            const otherPrimary = getPrimaryType(otherDept.avgNatural)
+
+            if (primaryType === 'D' && otherPrimary === 'S') {
+              recommendations.push(
+                `When communicating with ${otherDept.department}: Provide context and allow time for processing`
+              )
+            } else if (primaryType === 'S' && otherPrimary === 'D') {
+              recommendations.push(
+                `When communicating with ${otherDept.department}: Lead with key points and action items`
+              )
+            } else if (primaryType === 'I' && otherPrimary === 'C') {
+              recommendations.push(
+                `When communicating with ${otherDept.department}: Include data and specific details`
+              )
+            } else if (primaryType === 'C' && otherPrimary === 'I') {
+              recommendations.push(
+                `When communicating with ${otherDept.department}: Use engaging examples and stories`
+              )
+            }
+          } catch (recError) {
+            console.error(`Error generating recommendation for ${dept.department} -> ${otherDept.department}:`, recError)
+            // Continue with other departments
+          }
+        })
+
+        insights.push({
+          department: dept.department,
+          style: styleInfo.style,
+          preferences: styleInfo.preferences,
+          recommendations: recommendations.length > 0 ? recommendations : ['Standard communication practices apply'],
+        })
+      } catch (deptError) {
+        console.error(`Error getting communication insights for department ${dept.department}:`, deptError)
+        // Continue with other departments
+      }
+    })
+
+    return insights
+  } catch (error) {
+    console.error('Error in getCommunicationInsights:', error)
+    return []
+  }
 }
 

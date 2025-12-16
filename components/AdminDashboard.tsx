@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts'
-import { Download } from 'lucide-react'
+import { Download, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { generateAdminDashboardPDF } from '@/lib/pdfGenerator'
@@ -237,41 +237,78 @@ export default function AdminDashboard() {
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
     teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
     communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+    metadata?: {
+      departmentCount: number
+      totalResults: number
+      compatibilityAvailable: boolean
+      compatibilityReason?: string
+    }
   } | null>(null)
   const [loadingResults, setLoadingResults] = useState(false)
   const [loadingInsights, setLoadingInsights] = useState(false)
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle')
+  const [resultsError, setResultsError] = useState<string | null>(null)
+  const [insightsError, setInsightsError] = useState<string | null>(null)
   const dashboardRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
+  const loadResults = async () => {
     setLoadingResults(true)
-    fetch('/api/results')
-      .then((res) => res.json())
-      .then((data) => {
-        setAllResults(data)
-        setLoadingResults(false)
-      })
-      .catch((error) => {
-        console.error('Failed to fetch results:', error)
-        setLoadingResults(false)
-      })
+    setResultsError(null)
+    try {
+      const res = await fetch('/api/results')
+      if (!res.ok) {
+        throw new Error(`Failed to fetch results: ${res.status} ${res.statusText}`)
+      }
+      const data = await res.json()
+      setAllResults(data)
+      setLoadingResults(false)
+    } catch (error) {
+      console.error('Failed to fetch results:', error)
+      setResultsError(error instanceof Error ? error.message : 'Failed to load results. Please try refreshing.')
+      setLoadingResults(false)
+    }
+  }
 
+  const loadInsights = async () => {
     setLoadingInsights(true)
-    fetch('/api/insights')
-      .then((res) => res.json())
-      .then((data) => {
-        console.log('Insights data received:', {
-          compatibility: data.compatibility?.length || 0,
-          teamComposition: data.teamComposition?.length || 0,
-          communicationInsights: data.communicationInsights?.length || 0,
-        })
-        setInsights(data)
-        setLoadingInsights(false)
+    setInsightsError(null)
+    try {
+      const res = await fetch('/api/insights')
+      if (!res.ok) {
+        throw new Error(`Failed to fetch insights: ${res.status} ${res.statusText}`)
+      }
+      const data = await res.json()
+      console.log('Insights data received:', {
+        compatibility: data.compatibility?.length || 0,
+        teamComposition: data.teamComposition?.length || 0,
+        communicationInsights: data.communicationInsights?.length || 0,
       })
-      .catch((error) => {
-        console.error('Failed to fetch insights:', error)
-        setLoadingInsights(false)
-      })
+      setInsights(data)
+      setLoadingInsights(false)
+    } catch (error) {
+      console.error('Failed to fetch insights:', error)
+      setInsightsError(error instanceof Error ? error.message : 'Failed to load insights. Please try refreshing.')
+      setLoadingInsights(false)
+    }
+  }
+
+  const refreshData = () => {
+    loadResults()
+    loadInsights()
+  }
+
+  useEffect(() => {
+    loadResults()
+    loadInsights()
+  }, [])
+
+  // Refresh on window focus
+  useEffect(() => {
+    const handleFocus = () => {
+      refreshData()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
   }, [])
 
   const handleExportPDF = async () => {
@@ -401,6 +438,14 @@ export default function AdminDashboard() {
             <div className="flex gap-3">
               <Button
                 variant="outline"
+                onClick={refreshData}
+                disabled={loadingResults || loadingInsights}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${loadingResults || loadingInsights ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                variant="outline"
                 onClick={handleExportPDF}
                 disabled={pdfStatus === 'generating'}
               >
@@ -423,6 +468,36 @@ export default function AdminDashboard() {
               <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
                 Failed to generate PDF. Please try again.
               </span>
+            </div>
+          )}
+
+          {resultsError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm font-semibold text-red-800 mb-1">Error Loading Results</p>
+              <p className="text-sm text-red-700">{resultsError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadResults}
+                className="mt-2"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {insightsError && (
+            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm font-semibold text-amber-800 mb-1">Error Loading Insights</p>
+              <p className="text-sm text-amber-700">{insightsError}</p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadInsights}
+                className="mt-2"
+              >
+                Retry
+              </Button>
             </div>
           )}
 
@@ -776,7 +851,17 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500 py-4">Need at least 2 departments for compatibility analysis</p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-blue-800 mb-1">Compatibility Analysis Unavailable</p>
+                      <p className="text-sm text-blue-700">
+                        {insights.metadata?.compatibilityReason || 'Need at least 2 departments with results to calculate compatibility'}
+                      </p>
+                      {insights.metadata && (
+                        <div className="mt-2 text-xs text-blue-600">
+                          <p>Current status: {insights.metadata.departmentCount} department(s) with {insights.metadata.totalResults} total result(s)</p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -836,7 +921,12 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500 py-4">No team composition data available</p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-amber-800 mb-1">Team Composition Analysis Unavailable</p>
+                      <p className="text-sm text-amber-700">
+                        No department data available. Complete assessments to see team composition insights.
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -883,7 +973,12 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500 py-4">No communication insights available</p>
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm font-semibold text-amber-800 mb-1">Communication Insights Unavailable</p>
+                      <p className="text-sm text-amber-700">
+                        No department data available. Complete assessments to see communication style insights.
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>

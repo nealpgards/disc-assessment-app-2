@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
 
     if (department) {
       conditions.push('department = ?')
-      params.push(department)
+      params.push(department.trim())
     }
 
     if (startDate) {
@@ -103,34 +103,64 @@ export async function GET(request: NextRequest) {
     const results = stmt.all(...params) as any[]
 
     // Transform results to match frontend format
-    const transformedResults = results.map((row) => ({
-      id: row.id,
-      name: row.name,
-      email: row.email,
-      dept: row.department,
-      natural: {
-        D: row.natural_D,
-        I: row.natural_I,
-        S: row.natural_S,
-        C: row.natural_C,
-      },
-      adaptive: {
-        D: row.adaptive_D,
-        I: row.adaptive_I,
-        S: row.adaptive_S,
-        C: row.adaptive_C,
-      },
-      primaryNatural: row.primary_natural,
-      primaryAdaptive: row.primary_adaptive,
-      drivingForces: row.driving_forces ? JSON.parse(row.driving_forces) : null,
-      date: row.created_at.split('T')[0],
-    }))
+    const transformedResults = results.map((row) => {
+      try {
+        return {
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          dept: row.department,
+          natural: {
+            D: row.natural_D,
+            I: row.natural_I,
+            S: row.natural_S,
+            C: row.natural_C,
+          },
+          adaptive: {
+            D: row.adaptive_D,
+            I: row.adaptive_I,
+            S: row.adaptive_S,
+            C: row.adaptive_C,
+          },
+          primaryNatural: row.primary_natural,
+          primaryAdaptive: row.primary_adaptive,
+          drivingForces: row.driving_forces ? JSON.parse(row.driving_forces) : null,
+          date: row.created_at ? row.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+        }
+      } catch (parseError) {
+        console.error('Error parsing result row:', parseError, row)
+        // Return a safe fallback for this row
+        return {
+          id: row.id,
+          name: row.name || 'Unknown',
+          email: row.email,
+          dept: row.department || 'Unknown',
+          natural: {
+            D: row.natural_D || 0,
+            I: row.natural_I || 0,
+            S: row.natural_S || 0,
+            C: row.natural_C || 0,
+          },
+          adaptive: {
+            D: row.adaptive_D || 0,
+            I: row.adaptive_I || 0,
+            S: row.adaptive_S || 0,
+            C: row.adaptive_C || 0,
+          },
+          primaryNatural: row.primary_natural || 'S',
+          primaryAdaptive: row.primary_adaptive || 'S',
+          drivingForces: null,
+          date: new Date().toISOString().split('T')[0],
+        }
+      }
+    })
 
     return NextResponse.json(transformedResults)
   } catch (error) {
     console.error('Error fetching results:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { error: 'Failed to fetch results' },
+      { error: 'Failed to fetch results', details: errorMessage },
       { status: 500 }
     )
   }
