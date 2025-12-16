@@ -1,0 +1,44 @@
+0 verbose cli /usr/local/bin/node /usr/local/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.9.3
+2 info using node@v22.19.0
+3 silly config load:file:/usr/local/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/nealgardner/Documents/disc-assessment-app 2/.npmrc
+5 silly config load:file:/Users/nealgardner/.npmrc
+6 silly config load:file:/Users/nealgardner/.npm-global/etc/npmrc
+7 verbose title npm exec shadcn-ui@latest init
+8 verbose argv "exec" "--" "shadcn-ui@latest" "init"
+9 verbose logfile logs-max:10 dir:/Users/nealgardner/Documents/disc-assessment-app 2/.npm-cache/_logs/2025-12-11T14_54_42_333Z-
+10 verbose logfile /Users/nealgardner/Documents/disc-assessment-app 2/.npm-cache/_logs/2025-12-11T14_54_42_333Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+13 http fetch GET 200 https://registry.npmjs.org/shadcn-ui 133ms (cache miss)
+14 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+15 silly packumentCache heap:4345298944 maxSize:1086324736 maxEntrySize:543162368
+16 warn exec The following package was not found and will be installed: shadcn-ui@0.9.5
+17 silly idealTree buildDeps
+18 silly fetch manifest shadcn-ui@0.9.5
+19 silly packumentCache full:https://registry.npmjs.org/shadcn-ui cache-miss
+20 http fetch GET 200 https://registry.npmjs.org/shadcn-ui 72ms (cache miss)
+21 silly packumentCache full:https://registry.npmjs.org/shadcn-ui set size:undefined disposed:false
+22 silly placeDep ROOT shadcn-ui@0.9.5 OK for:  want: 0.9.5
+23 silly fetch manifest chalk@^5.4.1
+24 silly packumentCache full:https://registry.npmjs.org/chalk cache-miss
+25 http fetch GET 200 https://registry.npmjs.org/chalk 40ms (cache miss)
+26 silly packumentCache full:https://registry.npmjs.org/chalk set size:undefined disposed:false
+27 silly placeDep ROOT chalk@5.6.2 OK for: shadcn-ui@0.9.5 want: ^5.4.1
+28 silly reify moves {}
+29 silly audit bulk request { 'shadcn-ui': [ '0.9.5' ], chalk: [ '5.6.2' ] }
+30 http cache shadcn-ui@https://registry.npmjs.org/shadcn-ui/-/shadcn-ui-0.9.5.tgz 0ms (cache hit)
+31 http cache chalk@https://registry.npmjs.org/chalk/-/chalk-5.6.2.tgz 0ms (cache hit)
+32 silly tarball no local data for shadcn-ui@https://registry.npmjs.org/shadcn-ui/-/shadcn-ui-0.9.5.tgz. Extracting by manifest.
+33 silly tarball no local data for chalk@https://registry.npmjs.org/chalk/-/chalk-5.6.2.tgz. Extracting by manifest.
+34 http fetch GET 200 https://registry.npmjs.org/shadcn-ui/-/shadcn-ui-0.9.5.tgz 106ms (cache miss)
+35 http fetch GET 200 https://registry.npmjs.org/chalk/-/chalk-5.6.2.tgz 109ms (cache miss)
+36 http fetch POST 200 https://registry.npmjs.org/-/npm/v1/security/advisories/bulk 130ms
+37 silly audit report {}
+38 verbose cwd /Users/nealgardner/Documents/disc-assessment-app 2
+39 verbose os Darwin 25.1.0
+40 verbose node v22.19.0
+41 verbose npm  v10.9.3
+42 verbose exit 0
+43 info ok
