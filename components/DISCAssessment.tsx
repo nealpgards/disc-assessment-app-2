@@ -108,6 +108,7 @@ interface DrivingForceScores {
   PD: number
   MR: number
   MS: number
+  [key: string]: number
 }
 
 interface DrivingForceResult {
