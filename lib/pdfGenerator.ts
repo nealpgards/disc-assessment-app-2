@@ -18,6 +18,11 @@ interface CalculatedScores {
   primaryAdaptive: DISCType
 }
 
+interface DrivingForceResult {
+  scores: Record<string, number>
+  primaryForces: Record<string, string>
+}
+
 interface Result {
   name: string
   email?: string
@@ -27,6 +32,7 @@ interface Result {
   primaryNatural: DISCType
   primaryAdaptive: DISCType
   date: string
+  drivingForces?: DrivingForceResult
 }
 
 interface ProfileDescription {
@@ -688,5 +694,568 @@ The percentages indicate the relative strength of each DISC dimension in your pr
 
   // Save the PDF
   const fileName = `DISC_Assessment_${result.name.replace(/\s+/g, '_')}_${result.date}.pdf`
+  doc.save(fileName)
+}
+
+interface AdminDashboardData {
+  teamNaturalDist: Array<{ name: string; fullName: string; natural: number; adaptive: number; fill: string }>
+  avgByDept: Array<{
+    dept: string
+    count: number
+    D_nat: number
+    I_nat: number
+    S_nat: number
+    C_nat: number
+    D_adp: number
+    I_adp: number
+    S_adp: number
+    C_adp: number
+  }>
+  shifters: Result[]
+}
+
+interface AdminInsights {
+  compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
+  teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
+  communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+}
+
+export async function generateAdminDashboardPDF(
+  allResults: Result[],
+  insights: AdminInsights | null,
+  dashboardData: AdminDashboardData,
+  dashboardElement?: HTMLElement | null
+): Promise<void> {
+  const doc = new jsPDF('p', 'mm', 'a4')
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const margin = 15
+  const contentWidth = pageWidth - 2 * margin
+  let yPos = margin
+  let currentPage = 1
+
+  // Capture dashboard screenshot if provided
+  let dashboardImage: { src: string; width: number; height: number } | null = null
+  if (dashboardElement) {
+    try {
+      const canvas = await html2canvas(dashboardElement, {
+        backgroundColor: '#ffffff',
+        scale: 1.5,
+        useCORS: true,
+        logging: false,
+      })
+      dashboardImage = {
+        src: canvas.toDataURL('image/png'),
+        width: canvas.width,
+        height: canvas.height,
+      }
+    } catch (error) {
+      console.error('Failed to capture dashboard:', error)
+    }
+  }
+
+  // Helper function to add page numbers
+  const addPageNumber = (pageNum: number, totalPages: number) => {
+    doc.setFontSize(9)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Page ${pageNum} of ${totalPages}`, pageWidth - 30, pageHeight - 10, {
+      align: 'right',
+    })
+  }
+
+  // Helper function to add header
+  const addHeader = (title: string) => {
+    doc.setFontSize(16)
+    doc.setTextColor(30, 41, 59)
+    doc.setFont('helvetica', 'bold')
+    doc.text(title, margin, yPos)
+    doc.setLineWidth(0.5)
+    doc.setDrawColor(200, 200, 200)
+    doc.line(margin, yPos + 5, pageWidth - margin, yPos + 5)
+    yPos += 12
+  }
+
+  // Helper function to check if new page needed
+  const checkNewPage = (requiredSpace: number) => {
+    if (yPos + requiredSpace > pageHeight - 20) {
+      addPageNumber(currentPage, 10)
+      doc.addPage()
+      currentPage++
+      yPos = margin
+      return true
+    }
+    return false
+  }
+
+  // ========== PAGE 1: COVER PAGE ==========
+  doc.setFillColor(248, 250, 252)
+  doc.rect(0, 0, pageWidth, pageHeight, 'F')
+
+  doc.setFontSize(32)
+  doc.setTextColor(30, 41, 59)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Team Analytics Dashboard', pageWidth / 2, 60, { align: 'center' })
+
+  doc.setFontSize(18)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  doc.text('DISC Assessment Report', pageWidth / 2, 75, { align: 'center' })
+
+  yPos = 100
+  doc.setFillColor(255, 255, 255)
+  doc.roundedRect(margin, yPos, contentWidth, 40, 3, 3, 'F')
+  doc.setDrawColor(226, 232, 240)
+  doc.setLineWidth(0.5)
+  doc.roundedRect(margin, yPos, contentWidth, 40, 3, 3, 'S')
+
+  yPos += 12
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text(`Total Assessments: ${allResults.length}`, margin + 10, yPos)
+  yPos += 10
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(12)
+  doc.text(`Report Generated: ${new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })}`, margin + 10, yPos)
+
+  const departments = [...new Set(allResults.map((r) => r.dept))]
+  yPos += 15
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.text(`Departments: ${departments.length}`, margin + 10, yPos)
+  yPos += 8
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(71, 85, 105)
+  doc.text(departments.join(', '), margin + 10, yPos, { maxWidth: contentWidth - 20 })
+
+  addPageNumber(currentPage, 10)
+  currentPage++
+
+  // ========== PAGE 2: EXECUTIVE SUMMARY ==========
+  doc.addPage()
+  yPos = margin
+  addHeader('Executive Summary')
+
+  yPos += 5
+  doc.setFontSize(11)
+  doc.setTextColor(51, 65, 85)
+  doc.setFont('helvetica', 'normal')
+
+  const summaryText = `This report provides a comprehensive analysis of ${allResults.length} DISC assessments across ${departments.length} department${departments.length > 1 ? 's' : ''}. The analysis includes natural and adaptive behavioral styles, profile shifts, department averages, and team insights.`
+  const summaryLines = doc.splitTextToSize(summaryText, contentWidth)
+  doc.text(summaryLines, margin, yPos)
+  yPos += summaryLines.length * 6 + 10
+
+  // Key Statistics
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Key Statistics', margin, yPos)
+  yPos += 10
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+
+  const shiftPercentage = Math.round((dashboardData.shifters.length / allResults.length) * 100)
+  const stats = [
+    `Total Employees Assessed: ${allResults.length}`,
+    `Departments: ${departments.length}`,
+    `Profile Shifters: ${dashboardData.shifters.length} (${shiftPercentage}%)`,
+    `Average Natural D: ${Math.round(dashboardData.avgByDept.reduce((sum, d) => sum + d.D_nat, 0) / dashboardData.avgByDept.length)}%`,
+    `Average Natural I: ${Math.round(dashboardData.avgByDept.reduce((sum, d) => sum + d.I_nat, 0) / dashboardData.avgByDept.length)}%`,
+    `Average Natural S: ${Math.round(dashboardData.avgByDept.reduce((sum, d) => sum + d.S_nat, 0) / dashboardData.avgByDept.length)}%`,
+    `Average Natural C: ${Math.round(dashboardData.avgByDept.reduce((sum, d) => sum + d.C_nat, 0) / dashboardData.avgByDept.length)}%`,
+  ]
+
+  stats.forEach((stat) => {
+    checkNewPage(8)
+    doc.text(`• ${stat}`, margin + 5, yPos)
+    yPos += 7
+  })
+
+  addPageNumber(currentPage, 10)
+  currentPage++
+
+  // ========== PAGE 3: PROFILE DISTRIBUTION ==========
+  doc.addPage()
+  yPos = margin
+  addHeader('Profile Distribution Analysis')
+
+  yPos += 5
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Primary Type Distribution (Natural vs Adaptive)', margin, yPos)
+  yPos += 10
+
+  // Table header
+  doc.setFillColor(240, 253, 244)
+  doc.rect(margin, yPos, contentWidth, 8, 'F')
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Type', margin + 5, yPos + 6)
+  doc.text('Natural', margin + 50, yPos + 6)
+  doc.text('Adaptive', margin + 90, yPos + 6)
+  doc.text('Total', margin + contentWidth - 30, yPos + 6, { align: 'right' })
+  yPos += 8
+
+  // Table rows
+  dashboardData.teamNaturalDist.forEach((item, index) => {
+    checkNewPage(8)
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 250, 252)
+      doc.rect(margin, yPos, contentWidth, 7, 'F')
+    }
+
+    const [r, g, b] = hexToRgb(item.fill)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(r, g, b)
+    doc.text(item.name, margin + 5, yPos + 5)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+    doc.text(`${item.natural}`, margin + 50, yPos + 5)
+    doc.text(`${item.adaptive}`, margin + 90, yPos + 5)
+    doc.text(`${item.natural + item.adaptive}`, margin + contentWidth - 30, yPos + 5, { align: 'right' })
+    yPos += 7
+  })
+
+  yPos += 5
+  checkNewPage(15)
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Profile Shifters', margin, yPos)
+  yPos += 10
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  const shifterText = `${dashboardData.shifters.length} employees (${shiftPercentage}%) shift their primary DISC type under stress. This indicates significant behavioral adaptation when facing pressure.`
+  const shifterLines = doc.splitTextToSize(shifterText, contentWidth)
+  doc.text(shifterLines, margin, yPos)
+  yPos += shifterLines.length * 6 + 5
+
+  if (dashboardData.shifters.length > 0 && dashboardData.shifters.length <= 20) {
+    checkNewPage(10)
+    doc.setFontSize(9)
+    doc.setTextColor(71, 85, 105)
+    dashboardData.shifters.slice(0, 10).forEach((shifter) => {
+      checkNewPage(6)
+      const [nr, ng, nb] = hexToRgb(profileDescriptions[shifter.primaryNatural].color)
+      const [ar, ag, ab] = hexToRgb(profileDescriptions[shifter.primaryAdaptive].color)
+      doc.setTextColor(51, 65, 85)
+      doc.text(`${shifter.name} (${shifter.dept}): `, margin + 5, yPos)
+      doc.setTextColor(nr, ng, nb)
+      doc.text(shifter.primaryNatural, margin + 45, yPos)
+      doc.setTextColor(100, 100, 100)
+      doc.text('→', margin + 52, yPos)
+      doc.setTextColor(ar, ag, ab)
+      doc.text(shifter.primaryAdaptive, margin + 58, yPos)
+      yPos += 6
+    })
+  }
+
+  addPageNumber(currentPage, 10)
+  currentPage++
+
+  // ========== PAGE 4: DEPARTMENT ANALYSIS ==========
+  doc.addPage()
+  yPos = margin
+  addHeader('Department Average Scores')
+
+  yPos += 5
+  // Table header
+  doc.setFillColor(240, 253, 244)
+  doc.rect(margin, yPos, contentWidth, 10, 'F')
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Dept', margin + 2, yPos + 7)
+  doc.text('#', margin + 35, yPos + 7)
+  doc.text('D', margin + 42, yPos + 7)
+  doc.text('I', margin + 50, yPos + 7)
+  doc.text('S', margin + 58, yPos + 7)
+  doc.text('C', margin + 66, yPos + 7)
+  doc.setFillColor(255, 247, 237)
+  doc.rect(margin + 75, yPos, contentWidth - 75, 10, 'F')
+  doc.text('D', margin + 77, yPos + 7)
+  doc.text('I', margin + 85, yPos + 7)
+  doc.text('S', margin + 93, yPos + 7)
+  doc.text('C', margin + 101, yPos + 7)
+  yPos += 10
+
+  // Table rows
+  dashboardData.avgByDept.forEach((row, index) => {
+    checkNewPage(7)
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 250, 252)
+      doc.rect(margin, yPos, contentWidth, 6, 'F')
+    }
+
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+    doc.text(row.dept.substring(0, 12), margin + 2, yPos + 5)
+    doc.text(`${row.count}`, margin + 35, yPos + 5)
+    doc.text(`${row.D_nat}`, margin + 42, yPos + 5)
+    doc.text(`${row.I_nat}`, margin + 50, yPos + 5)
+    doc.text(`${row.S_nat}`, margin + 58, yPos + 5)
+    doc.text(`${row.C_nat}`, margin + 66, yPos + 5)
+    doc.text(`${row.D_adp}`, margin + 77, yPos + 5)
+    doc.text(`${row.I_adp}`, margin + 85, yPos + 5)
+    doc.text(`${row.S_adp}`, margin + 93, yPos + 5)
+    doc.text(`${row.C_adp}`, margin + 101, yPos + 5)
+    yPos += 6
+  })
+
+  yPos += 5
+  checkNewPage(10)
+  doc.setFontSize(8)
+  doc.setTextColor(100, 100, 100)
+  doc.text('Natural scores shown in green background, Adaptive scores in orange background', margin, yPos)
+
+  addPageNumber(currentPage, 10)
+  currentPage++
+
+  // ========== PAGE 5: ALL RESULTS TABLE ==========
+  doc.addPage()
+  yPos = margin
+  addHeader('All Employee Results')
+
+  yPos += 5
+  // Table header
+  doc.setFillColor(240, 253, 244)
+  doc.rect(margin, yPos, contentWidth, 8, 'F')
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Name', margin + 2, yPos + 6)
+  doc.text('Dept', margin + 35, yPos + 6)
+  doc.text('Nat', margin + 50, yPos + 6)
+  doc.text('Adp', margin + 58, yPos + 6)
+  doc.text('D', margin + 65, yPos + 6)
+  doc.text('I', margin + 72, yPos + 6)
+  doc.text('S', margin + 79, yPos + 6)
+  doc.text('C', margin + 86, yPos + 6)
+  doc.text('Date', margin + 93, yPos + 6)
+  yPos += 8
+
+  // Table rows (limit to first 30 for space)
+  allResults.slice(0, 30).forEach((result, index) => {
+    checkNewPage(6)
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 250, 252)
+      doc.rect(margin, yPos, contentWidth, 5, 'F')
+    }
+
+    doc.setFontSize(7)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+    doc.text(result.name.substring(0, 12), margin + 2, yPos + 4)
+    doc.text(result.dept.substring(0, 8), margin + 35, yPos + 4)
+    
+    const [nr, ng, nb] = hexToRgb(profileDescriptions[result.primaryNatural].color)
+    doc.setTextColor(nr, ng, nb)
+    doc.text(result.primaryNatural, margin + 50, yPos + 4)
+    
+    const [ar, ag, ab] = hexToRgb(profileDescriptions[result.primaryAdaptive].color)
+    doc.setTextColor(ar, ag, ab)
+    doc.text(result.primaryAdaptive, margin + 58, yPos + 4)
+    
+    doc.setTextColor(51, 65, 85)
+    doc.text(`${result.natural.D}/${result.adaptive.D}`, margin + 65, yPos + 4)
+    doc.text(`${result.natural.I}/${result.adaptive.I}`, margin + 72, yPos + 4)
+    doc.text(`${result.natural.S}/${result.adaptive.S}`, margin + 79, yPos + 4)
+    doc.text(`${result.natural.C}/${result.adaptive.C}`, margin + 86, yPos + 4)
+    doc.text(result.date, margin + 93, yPos + 4)
+    yPos += 5
+  })
+
+  if (allResults.length > 30) {
+    yPos += 5
+    checkNewPage(8)
+    doc.setFontSize(9)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`... and ${allResults.length - 30} more results (see full data in JSON export)`, margin, yPos)
+  }
+
+  addPageNumber(currentPage, 10)
+  currentPage++
+
+  // ========== PAGE 6+: INSIGHTS ==========
+  if (insights) {
+    // Compatibility Matrix
+    if (insights.compatibility.length > 0) {
+      checkNewPage(30)
+      addHeader('Department Compatibility Matrix')
+      yPos += 5
+
+      insights.compatibility.forEach((comp) => {
+        checkNewPage(25)
+        doc.setFillColor(255, 255, 255)
+        doc.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'F')
+        doc.setDrawColor(200, 200, 200)
+        doc.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'S')
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(30, 41, 59)
+        doc.text(`${comp.dept1} ↔ ${comp.dept2}`, margin + 5, yPos + 8)
+        
+        const scoreColor = comp.score >= 80 ? [16, 185, 129] : comp.score >= 60 ? [245, 158, 11] : [239, 68, 68]
+        doc.setFontSize(16)
+        doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2])
+        doc.text(`${comp.score}%`, margin + contentWidth - 20, yPos + 8, { align: 'right' })
+
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(71, 85, 105)
+        const reasoningLines = doc.splitTextToSize(comp.reasoning, contentWidth - 10)
+        doc.text(reasoningLines, margin + 5, yPos + 15)
+        yPos += 20 + reasoningLines.length * 4
+      })
+
+      addPageNumber(currentPage, 10)
+      currentPage++
+    }
+
+    // Team Composition
+    if (insights.teamComposition.length > 0) {
+      checkNewPage(30)
+      addHeader('Team Composition Analysis')
+      yPos += 5
+
+      insights.teamComposition.forEach((comp) => {
+        checkNewPage(40)
+        doc.setFillColor(255, 255, 255)
+        doc.roundedRect(margin, yPos, contentWidth, 35, 2, 2, 'F')
+        doc.setDrawColor(200, 200, 200)
+        doc.roundedRect(margin, yPos, contentWidth, 35, 2, 2, 'S')
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(30, 41, 59)
+        doc.text(comp.department, margin + 5, yPos + 8)
+
+        let lineY = yPos + 15
+        if (comp.strengths.length > 0) {
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(5, 150, 105)
+          doc.text('Strengths:', margin + 5, lineY)
+          lineY += 6
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(8)
+          doc.setTextColor(51, 65, 85)
+          comp.strengths.forEach((strength) => {
+            doc.text(`• ${strength}`, margin + 10, lineY)
+            lineY += 5
+          })
+        }
+
+        if (comp.gaps.length > 0) {
+          lineY += 2
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(234, 88, 12)
+          doc.text('Potential Gaps:', margin + 5, lineY)
+          lineY += 6
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(8)
+          doc.setTextColor(51, 65, 85)
+          comp.gaps.forEach((gap) => {
+            doc.text(`• ${gap}`, margin + 10, lineY)
+            lineY += 5
+          })
+        }
+
+        yPos += 40
+      })
+
+      addPageNumber(currentPage, 10)
+      currentPage++
+    }
+
+    // Communication Insights
+    if (insights.communicationInsights.length > 0) {
+      checkNewPage(30)
+      addHeader('Communication Style Insights')
+      yPos += 5
+
+      insights.communicationInsights.forEach((insight) => {
+        checkNewPage(40)
+        doc.setFillColor(255, 255, 255)
+        doc.roundedRect(margin, yPos, contentWidth, 35, 2, 2, 'F')
+        doc.setDrawColor(200, 200, 200)
+        doc.roundedRect(margin, yPos, contentWidth, 35, 2, 2, 'S')
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(30, 41, 59)
+        doc.text(`${insight.department} - ${insight.style}`, margin + 5, yPos + 8)
+
+        let lineY = yPos + 15
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(51, 65, 85)
+        insight.preferences.forEach((pref) => {
+          doc.text(`• ${pref}`, margin + 5, lineY)
+          lineY += 5
+        })
+
+        yPos += 35
+      })
+
+      addPageNumber(currentPage, 10)
+      currentPage++
+    }
+  }
+
+  // ========== FINAL PAGE: SUMMARY ==========
+  checkNewPage(30)
+  addHeader('Report Summary')
+
+  yPos += 5
+  doc.setFontSize(10)
+  doc.setTextColor(51, 65, 85)
+  doc.setFont('helvetica', 'normal')
+
+  const summaryPoints = [
+    `This report analyzed ${allResults.length} DISC assessments across ${departments.length} department${departments.length > 1 ? 's' : ''}.`,
+    `${dashboardData.shifters.length} employees (${shiftPercentage}%) demonstrate profile shifts under stress.`,
+    `The data provides insights into team composition, communication styles, and department compatibility.`,
+    `Use this information to improve team collaboration, communication, and organizational effectiveness.`,
+  ]
+
+  summaryPoints.forEach((point) => {
+    checkNewPage(8)
+    doc.text(`• ${point}`, margin + 5, yPos)
+    yPos += 7
+  })
+
+  yPos += 10
+  checkNewPage(15)
+  doc.setFontSize(9)
+  doc.setTextColor(100, 100, 100)
+  doc.setFont('helvetica', 'italic')
+  doc.text(
+    'For detailed individual results and complete data, refer to the JSON export available in the dashboard.',
+    margin,
+    yPos,
+    { maxWidth: contentWidth }
+  )
+
+  addPageNumber(currentPage, 10)
+
+  // Save the PDF
+  const fileName = `Team_Analytics_Dashboard_${new Date().toISOString().split('T')[0]}.pdf`
   doc.save(fileName)
 }
