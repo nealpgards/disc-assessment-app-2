@@ -63,113 +63,177 @@ function getCompatibilityReasoning(dept1: DISCType, dept2: DISCType): string {
 }
 
 export function getAllResults(): ResultRow[] {
-  const stmt = dbInstance.prepare('SELECT * FROM results ORDER BY created_at DESC')
-  return stmt.all() as ResultRow[]
+  try {
+    if (!dbInstance) {
+      console.error('Database instance is not available')
+      return []
+    }
+    
+    const stmt = dbInstance.prepare('SELECT * FROM results ORDER BY created_at DESC')
+    const results = stmt.all() as ResultRow[]
+    
+    console.log(`[Insights] Retrieved ${results.length} results from database`)
+    return results
+  } catch (error) {
+    console.error('[Insights] Error fetching results from database:', error)
+    return []
+  }
 }
 
-// Normalize department name (trim whitespace and convert to lowercase for comparison)
+// Normalize department name (trim whitespace)
 function normalizeDepartmentName(dept: string): string {
+  if (!dept || typeof dept !== 'string') {
+    return ''
+  }
   return dept.trim()
 }
 
-
 // Export for use in API routes
 export function getDepartmentData(): DepartmentData[] {
-  const results = getAllResults()
-  
-  // Filter out empty or null departments
-  const validResults = results.filter((r) => r.department && r.department.trim().length > 0)
-  
-  if (validResults.length === 0) {
+  try {
+    const results = getAllResults()
+    
+    if (!results || results.length === 0) {
+      console.log('[Insights] No results found in database')
+      return []
+    }
+    
+    // Filter out empty or null departments
+    const validResults = results.filter((r) => {
+      return r && r.department && typeof r.department === 'string' && normalizeDepartmentName(r.department).length > 0
+    })
+    
+    if (validResults.length === 0) {
+      console.log('[Insights] No valid results with departments found')
+      return []
+    }
+    
+    // Group departments by normalized name (case-insensitive, trimmed)
+    const departmentMap = new Map<string, ResultRow[]>()
+    
+    validResults.forEach((r) => {
+      const normalized = normalizeDepartmentName(r.department).toLowerCase()
+      if (normalized.length > 0) {
+        if (!departmentMap.has(normalized)) {
+          departmentMap.set(normalized, [])
+        }
+        departmentMap.get(normalized)!.push(r)
+      }
+    })
+    
+    // Debug logging
+    console.log('[Insights] Department grouping:', {
+      totalResults: results.length,
+      validResults: validResults.length,
+      uniqueDepartments: departmentMap.size,
+      departmentNames: Array.from(departmentMap.keys()),
+    })
+    
+    if (departmentMap.size === 0) {
+      console.log('[Insights] No departments found after grouping')
+      return []
+    }
+    
+    // Get canonical names for each normalized department (use first occurrence's original name)
+    const departments = Array.from(departmentMap.keys()).map((normalized) => {
+      const firstResult = departmentMap.get(normalized)![0]
+      return normalizeDepartmentName(firstResult.department) // Use trimmed version of first occurrence
+    })
+
+    const departmentData = departments.map((dept) => {
+      // Filter results that match this department (case-insensitive, trimmed)
+      const normalizedDept = normalizeDepartmentName(dept).toLowerCase()
+      const deptResults = validResults.filter(
+        (r) => normalizeDepartmentName(r.department).toLowerCase() === normalizedDept
+      )
+      const count = deptResults.length
+
+      if (count === 0) {
+        console.warn(`[Insights] No results found for department: ${dept}`)
+        return null
+      }
+
+      // Validate that all required fields exist
+      const validDeptResults = deptResults.filter(r => 
+        typeof r.natural_D === 'number' && 
+        typeof r.natural_I === 'number' &&
+        typeof r.natural_S === 'number' &&
+        typeof r.natural_C === 'number' &&
+        typeof r.adaptive_D === 'number' &&
+        typeof r.adaptive_I === 'number' &&
+        typeof r.adaptive_S === 'number' &&
+        typeof r.adaptive_C === 'number'
+      )
+
+      if (validDeptResults.length === 0) {
+        console.warn(`[Insights] No valid results with scores for department: ${dept}`)
+        return null
+      }
+
+      // Calculate averages
+      const avgNatural: Scores = {
+        D: Math.round(validDeptResults.reduce((sum, r) => sum + (r.natural_D || 0), 0) / validDeptResults.length),
+        I: Math.round(validDeptResults.reduce((sum, r) => sum + (r.natural_I || 0), 0) / validDeptResults.length),
+        S: Math.round(validDeptResults.reduce((sum, r) => sum + (r.natural_S || 0), 0) / validDeptResults.length),
+        C: Math.round(validDeptResults.reduce((sum, r) => sum + (r.natural_C || 0), 0) / validDeptResults.length),
+      }
+
+      const avgAdaptive: Scores = {
+        D: Math.round(validDeptResults.reduce((sum, r) => sum + (r.adaptive_D || 0), 0) / validDeptResults.length),
+        I: Math.round(validDeptResults.reduce((sum, r) => sum + (r.adaptive_I || 0), 0) / validDeptResults.length),
+        S: Math.round(validDeptResults.reduce((sum, r) => sum + (r.adaptive_S || 0), 0) / validDeptResults.length),
+        C: Math.round(validDeptResults.reduce((sum, r) => sum + (r.adaptive_C || 0), 0) / validDeptResults.length),
+      }
+
+      // Primary type distribution
+      const primaryNaturalDistribution: Record<DISCType, number> = {
+        D: validDeptResults.filter((r) => r.primary_natural === 'D').length,
+        I: validDeptResults.filter((r) => r.primary_natural === 'I').length,
+        S: validDeptResults.filter((r) => r.primary_natural === 'S').length,
+        C: validDeptResults.filter((r) => r.primary_natural === 'C').length,
+      }
+
+      const primaryAdaptiveDistribution: Record<DISCType, number> = {
+        D: validDeptResults.filter((r) => r.primary_adaptive === 'D').length,
+        I: validDeptResults.filter((r) => r.primary_adaptive === 'I').length,
+        S: validDeptResults.filter((r) => r.primary_adaptive === 'S').length,
+        C: validDeptResults.filter((r) => r.primary_adaptive === 'C').length,
+      }
+
+      return {
+        department: dept,
+        count: validDeptResults.length,
+        avgNatural,
+        avgAdaptive,
+        primaryNaturalDistribution,
+        primaryAdaptiveDistribution,
+      }
+    }).filter((dept): dept is DepartmentData => dept !== null)
+
+    console.log(`[Insights] Processed ${departmentData.length} departments with valid data`)
+    return departmentData
+  } catch (error) {
+    console.error('[Insights] Error in getDepartmentData:', error)
     return []
   }
-  
-  // Group departments by normalized name (case-insensitive, trimmed)
-  const departmentMap = new Map<string, ResultRow[]>()
-  
-  validResults.forEach((r) => {
-    const normalized = normalizeDepartmentName(r.department).toLowerCase()
-    if (!departmentMap.has(normalized)) {
-      departmentMap.set(normalized, [])
-    }
-    departmentMap.get(normalized)!.push(r)
-  })
-  
-  // Debug logging
-  console.log('Department grouping:', {
-    totalResults: results.length,
-    validResults: validResults.length,
-    uniqueDepartments: departmentMap.size,
-    departmentNames: Array.from(departmentMap.keys()),
-  })
-  
-  // Get canonical names for each normalized department (use first occurrence's original name)
-  const departments = Array.from(departmentMap.keys()).map((normalized) => {
-    const firstResult = departmentMap.get(normalized)![0]
-    return normalizeDepartmentName(firstResult.department) // Use trimmed version of first occurrence
-  })
-
-  return departments.map((dept) => {
-    // Filter results that match this department (case-insensitive, trimmed)
-    const normalizedDept = normalizeDepartmentName(dept).toLowerCase()
-    const deptResults = validResults.filter(
-      (r) => normalizeDepartmentName(r.department).toLowerCase() === normalizedDept
-    )
-    const count = deptResults.length
-
-    // Calculate averages
-    const avgNatural: Scores = {
-      D: Math.round(deptResults.reduce((sum, r) => sum + r.natural_D, 0) / count),
-      I: Math.round(deptResults.reduce((sum, r) => sum + r.natural_I, 0) / count),
-      S: Math.round(deptResults.reduce((sum, r) => sum + r.natural_S, 0) / count),
-      C: Math.round(deptResults.reduce((sum, r) => sum + r.natural_C, 0) / count),
-    }
-
-    const avgAdaptive: Scores = {
-      D: Math.round(deptResults.reduce((sum, r) => sum + r.adaptive_D, 0) / count),
-      I: Math.round(deptResults.reduce((sum, r) => sum + r.adaptive_I, 0) / count),
-      S: Math.round(deptResults.reduce((sum, r) => sum + r.adaptive_S, 0) / count),
-      C: Math.round(deptResults.reduce((sum, r) => sum + r.adaptive_C, 0) / count),
-    }
-
-    // Primary type distribution
-    const primaryNaturalDistribution: Record<DISCType, number> = {
-      D: deptResults.filter((r) => r.primary_natural === 'D').length,
-      I: deptResults.filter((r) => r.primary_natural === 'I').length,
-      S: deptResults.filter((r) => r.primary_natural === 'S').length,
-      C: deptResults.filter((r) => r.primary_natural === 'C').length,
-    }
-
-    const primaryAdaptiveDistribution: Record<DISCType, number> = {
-      D: deptResults.filter((r) => r.primary_adaptive === 'D').length,
-      I: deptResults.filter((r) => r.primary_adaptive === 'I').length,
-      S: deptResults.filter((r) => r.primary_adaptive === 'S').length,
-      C: deptResults.filter((r) => r.primary_adaptive === 'C').length,
-    }
-
-    return {
-      department: dept,
-      count,
-      avgNatural,
-      avgAdaptive,
-      primaryNaturalDistribution,
-      primaryAdaptiveDistribution,
-    }
-  })
 }
 
 function getPrimaryType(scores: Scores): DISCType {
-  return (Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0] as DISCType)
+  const entries = Object.entries(scores) as [DISCType, number][]
+  const sorted = entries.sort((a, b) => b[1] - a[1])
+  return sorted[0][0]
 }
 
 export function calculateDepartmentCompatibility(): CompatibilityScore[] {
   try {
+    console.log('[Insights] Starting compatibility calculation...')
     const deptData = getDepartmentData()
-    const compatibilities: CompatibilityScore[] = []
-
+    
+    console.log(`[Insights] Found ${deptData.length} departments`)
+    
     // Need at least 2 departments for compatibility analysis
     if (deptData.length < 2) {
-      console.log('Not enough departments for compatibility analysis:', {
+      console.log('[Insights] Not enough departments for compatibility analysis:', {
         departmentCount: deptData.length,
         departments: deptData.map(d => d.department),
       })
@@ -178,30 +242,42 @@ export function calculateDepartmentCompatibility(): CompatibilityScore[] {
 
     // Validate department data
     const validDeptData = deptData.filter(dept => {
-      if (!dept.department || dept.count === 0) {
-        console.warn('Invalid department data:', dept)
+      if (!dept || !dept.department || dept.count === 0) {
+        console.warn('[Insights] Invalid department data (missing or zero count):', dept)
         return false
       }
       // Validate scores exist and are numbers
-      const hasValidScores = Object.values(dept.avgNatural).every(
+      if (!dept.avgNatural || !dept.avgAdaptive) {
+        console.warn('[Insights] Invalid scores (missing avgNatural or avgAdaptive):', dept.department)
+        return false
+      }
+      const hasValidNaturalScores = Object.values(dept.avgNatural).every(
         score => typeof score === 'number' && !isNaN(score) && score >= 0
       )
-      if (!hasValidScores) {
-        console.warn('Invalid scores for department:', dept.department)
+      const hasValidAdaptiveScores = Object.values(dept.avgAdaptive).every(
+        score => typeof score === 'number' && !isNaN(score) && score >= 0
+      )
+      if (!hasValidNaturalScores || !hasValidAdaptiveScores) {
+        console.warn('[Insights] Invalid scores for department:', dept.department, {
+          avgNatural: dept.avgNatural,
+          avgAdaptive: dept.avgAdaptive,
+        })
         return false
       }
       return true
     })
 
     if (validDeptData.length < 2) {
-      console.log('Not enough valid departments for compatibility analysis:', {
+      console.log('[Insights] Not enough valid departments for compatibility analysis:', {
         total: deptData.length,
         valid: validDeptData.length,
       })
       return []
     }
 
-    console.log('Calculating compatibility for departments:', validDeptData.map(d => d.department))
+    console.log('[Insights] Calculating compatibility for departments:', validDeptData.map(d => d.department))
+
+    const compatibilities: CompatibilityScore[] = []
 
     for (let i = 0; i < validDeptData.length; i++) {
       for (let j = i + 1; j < validDeptData.length; j++) {
@@ -214,8 +290,13 @@ export function calculateDepartmentCompatibility(): CompatibilityScore[] {
           const dept2Primary = getPrimaryType(dept2.avgNatural)
 
           // Validate primary types
+          if (!dept1Primary || !dept2Primary) {
+            console.warn(`[Insights] Could not determine primary types for ${dept1.department} or ${dept2.department}`)
+            continue
+          }
+
           if (!compatibilityMatrix[dept1Primary] || !compatibilityMatrix[dept1Primary][dept2Primary]) {
-            console.warn(`Invalid compatibility matrix lookup for ${dept1Primary}-${dept2Primary}`)
+            console.warn(`[Insights] Invalid compatibility matrix lookup for ${dept1Primary}-${dept2Primary}`)
             continue
           }
 
@@ -238,35 +319,37 @@ export function calculateDepartmentCompatibility(): CompatibilityScore[] {
             reasoning: getCompatibilityReasoning(dept1Primary, dept2Primary),
           })
         } catch (pairError) {
-          console.error(`Error calculating compatibility for pair ${i}-${j}:`, pairError)
+          console.error(`[Insights] Error calculating compatibility for pair ${i}-${j}:`, pairError)
           // Continue with other pairs
         }
       }
     }
 
+    console.log(`[Insights] Calculated ${compatibilities.length} compatibility scores`)
     return compatibilities.sort((a, b) => b.score - a.score)
   } catch (error) {
-    console.error('Error in calculateDepartmentCompatibility:', error)
+    console.error('[Insights] Error in calculateDepartmentCompatibility:', error)
     return []
   }
 }
 
 export function analyzeTeamComposition(): TeamComposition[] {
   try {
+    console.log('[Insights] Starting team composition analysis...')
     const deptData = getDepartmentData()
     const compositions: TeamComposition[] = []
 
     deptData.forEach((dept) => {
       try {
         // Validate department data
-        if (!dept.department || dept.count === 0) {
-          console.warn('Skipping invalid department:', dept)
+        if (!dept || !dept.department || dept.count === 0) {
+          console.warn('[Insights] Skipping invalid department:', dept)
           return
         }
 
         // Validate scores
         if (!dept.avgNatural || typeof dept.avgNatural.D !== 'number') {
-          console.warn('Invalid scores for department:', dept.department)
+          console.warn('[Insights] Invalid scores for department:', dept.department)
           return
         }
 
@@ -325,20 +408,22 @@ export function analyzeTeamComposition(): TeamComposition[] {
           recommendations,
         })
       } catch (deptError) {
-        console.error(`Error analyzing team composition for department ${dept.department}:`, deptError)
+        console.error(`[Insights] Error analyzing team composition for department ${dept?.department}:`, deptError)
         // Continue with other departments
       }
     })
 
+    console.log(`[Insights] Analyzed ${compositions.length} team compositions`)
     return compositions
   } catch (error) {
-    console.error('Error in analyzeTeamComposition:', error)
+    console.error('[Insights] Error in analyzeTeamComposition:', error)
     return []
   }
 }
 
 export function getCommunicationInsights(): CommunicationInsight[] {
   try {
+    console.log('[Insights] Starting communication insights analysis...')
     const deptData = getDepartmentData()
     const insights: CommunicationInsight[] = []
 
@@ -384,14 +469,14 @@ export function getCommunicationInsights(): CommunicationInsight[] {
     deptData.forEach((dept) => {
       try {
         // Validate department data
-        if (!dept.department || dept.count === 0) {
-          console.warn('Skipping invalid department:', dept)
+        if (!dept || !dept.department || dept.count === 0) {
+          console.warn('[Insights] Skipping invalid department:', dept)
           return
         }
 
         // Validate scores
         if (!dept.avgNatural || typeof dept.avgNatural.D !== 'number') {
-          console.warn('Invalid scores for department:', dept.department)
+          console.warn('[Insights] Invalid scores for department:', dept.department)
           return
         }
 
@@ -399,7 +484,7 @@ export function getCommunicationInsights(): CommunicationInsight[] {
         const styleInfo = communicationStyles[primaryType]
         
         if (!styleInfo) {
-          console.warn(`No communication style found for type: ${primaryType}`)
+          console.warn(`[Insights] No communication style found for type: ${primaryType}`)
           return
         }
 
@@ -407,7 +492,7 @@ export function getCommunicationInsights(): CommunicationInsight[] {
 
         // Generate recommendations based on other departments
         deptData.forEach((otherDept) => {
-          if (otherDept.department === dept.department) return
+          if (!otherDept || otherDept.department === dept.department) return
           if (!otherDept.avgNatural) return
 
           try {
@@ -431,7 +516,7 @@ export function getCommunicationInsights(): CommunicationInsight[] {
               )
             }
           } catch (recError) {
-            console.error(`Error generating recommendation for ${dept.department} -> ${otherDept.department}:`, recError)
+            console.error(`[Insights] Error generating recommendation for ${dept.department} -> ${otherDept.department}:`, recError)
             // Continue with other departments
           }
         })
@@ -443,15 +528,15 @@ export function getCommunicationInsights(): CommunicationInsight[] {
           recommendations: recommendations.length > 0 ? recommendations : ['Standard communication practices apply'],
         })
       } catch (deptError) {
-        console.error(`Error getting communication insights for department ${dept.department}:`, deptError)
+        console.error(`[Insights] Error getting communication insights for department ${dept?.department}:`, deptError)
         // Continue with other departments
       }
     })
 
+    console.log(`[Insights] Generated ${insights.length} communication insights`)
     return insights
   } catch (error) {
-    console.error('Error in getCommunicationInsights:', error)
+    console.error('[Insights] Error in getCommunicationInsights:', error)
     return []
   }
 }
-

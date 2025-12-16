@@ -7,6 +7,8 @@ import {
 } from '@/lib/insights'
 
 export async function GET() {
+  console.log('[API] Insights endpoint called')
+  
   const result: {
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
     teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
@@ -25,35 +27,49 @@ export async function GET() {
 
   try {
     // Get department data to provide metadata
+    console.log('[API] Fetching department data...')
     const deptData = getDepartmentData()
     const departmentCount = deptData.length
+    const totalResults = deptData.reduce((sum, dept) => sum + dept.count, 0)
+
+    console.log('[API] Department data retrieved:', {
+      departmentCount,
+      totalResults,
+      departments: deptData.map(d => ({ name: d.department, count: d.count })),
+    })
 
     // Calculate each insight type independently to allow partial success
     try {
+      console.log('[API] Calculating compatibility...')
       result.compatibility = calculateDepartmentCompatibility()
+      console.log('[API] Compatibility calculated:', result.compatibility.length, 'pairs')
     } catch (compatError) {
-      console.error('Error calculating compatibility:', compatError)
+      console.error('[API] Error calculating compatibility:', compatError)
       result.compatibility = []
     }
 
     try {
+      console.log('[API] Analyzing team composition...')
       result.teamComposition = analyzeTeamComposition()
+      console.log('[API] Team composition analyzed:', result.teamComposition.length, 'departments')
     } catch (compError) {
-      console.error('Error analyzing team composition:', compError)
+      console.error('[API] Error analyzing team composition:', compError)
       result.teamComposition = []
     }
 
     try {
+      console.log('[API] Getting communication insights...')
       result.communicationInsights = getCommunicationInsights()
+      console.log('[API] Communication insights retrieved:', result.communicationInsights.length, 'departments')
     } catch (commError) {
-      console.error('Error getting communication insights:', commError)
+      console.error('[API] Error getting communication insights:', commError)
       result.communicationInsights = []
     }
 
     // Add metadata about why compatibility might not be available
     result.metadata = {
       departmentCount,
-      totalResults: deptData.reduce((sum, dept) => sum + dept.count, 0),
+      totalResults,
       compatibilityAvailable: result.compatibility.length > 0,
       compatibilityReason:
         departmentCount < 2
@@ -64,7 +80,7 @@ export async function GET() {
     }
 
     // Debug logging
-    console.log('Insights calculated:', {
+    console.log('[API] Insights calculated:', {
       compatibilityCount: result.compatibility.length,
       teamCompositionCount: result.teamComposition.length,
       communicationInsightsCount: result.communicationInsights.length,
@@ -73,8 +89,15 @@ export async function GET() {
 
     return NextResponse.json(result)
   } catch (error) {
-    console.error('Error calculating insights:', error)
+    console.error('[API] Error calculating insights:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    const errorStack = error instanceof Error ? error.stack : undefined
+    
+    console.error('[API] Full error details:', {
+      message: errorMessage,
+      stack: errorStack,
+    })
+    
     return NextResponse.json(
       {
         error: 'Failed to calculate insights',
@@ -82,9 +105,14 @@ export async function GET() {
         compatibility: [],
         teamComposition: [],
         communicationInsights: [],
+        metadata: {
+          departmentCount: 0,
+          totalResults: 0,
+          compatibilityAvailable: false,
+          compatibilityReason: `Error: ${errorMessage}`,
+        },
       },
       { status: 500 }
     )
   }
 }
-

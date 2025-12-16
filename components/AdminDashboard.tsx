@@ -274,21 +274,56 @@ export default function AdminDashboard() {
     setInsightsError(null)
     try {
       const res = await fetch('/api/insights')
-      if (!res.ok) {
-        throw new Error(`Failed to fetch insights: ${res.status} ${res.statusText}`)
-      }
       const data = await res.json()
-      console.log('Insights data received:', {
+      
+      console.log('Insights API response:', {
+        status: res.status,
+        ok: res.ok,
+        data: data,
         compatibility: data.compatibility?.length || 0,
         teamComposition: data.teamComposition?.length || 0,
         communicationInsights: data.communicationInsights?.length || 0,
+        metadata: data.metadata,
       })
-      setInsights(data)
+      
+      if (!res.ok) {
+        throw new Error(data.error || data.details || `Failed to fetch insights: ${res.status} ${res.statusText}`)
+      }
+      
+      // Ensure we have the expected structure
+      const insightsData = {
+        compatibility: Array.isArray(data.compatibility) ? data.compatibility : [],
+        teamComposition: Array.isArray(data.teamComposition) ? data.teamComposition : [],
+        communicationInsights: Array.isArray(data.communicationInsights) ? data.communicationInsights : [],
+        metadata: data.metadata || {
+          departmentCount: 0,
+          totalResults: 0,
+          compatibilityAvailable: false,
+          compatibilityReason: 'No metadata available',
+        },
+      }
+      
+      console.log('Processed insights data:', insightsData)
+      setInsights(insightsData)
       setLoadingInsights(false)
     } catch (error) {
       console.error('Failed to fetch insights:', error)
-      setInsightsError(error instanceof Error ? error.message : 'Failed to load insights. Please try refreshing.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load insights. Please try refreshing.'
+      setInsightsError(errorMessage)
       setLoadingInsights(false)
+      
+      // Set empty insights on error so UI doesn't break
+      setInsights({
+        compatibility: [],
+        teamComposition: [],
+        communicationInsights: [],
+        metadata: {
+          departmentCount: 0,
+          totalResults: 0,
+          compatibilityAvailable: false,
+          compatibilityReason: errorMessage,
+        },
+      })
     }
   }
 
@@ -815,10 +850,20 @@ export default function AdminDashboard() {
           )}
 
           {/* Department Collaboration Insights */}
-          {insights && (
-            <>
-              <div className="border-t-2 border-slate-200 pt-8 mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Insights</h2>
+          <div className="border-t-2 border-slate-200 pt-8 mb-8">
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Insights</h2>
+            
+            {!insights && !loadingInsights && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <p className="text-sm font-semibold text-amber-800 mb-1">Insights Not Loaded</p>
+                <p className="text-sm text-amber-700">
+                  Insights data has not been loaded yet. Click refresh to load insights.
+                </p>
+              </div>
+            )}
+            
+            {insights && (
+              <>
 
                 {/* Compatibility Matrix */}
                 <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
@@ -981,9 +1026,9 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
 
           {/* Export */}
           <div className="bg-blue-50 rounded-xl p-5">
