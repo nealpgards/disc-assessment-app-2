@@ -33,10 +33,13 @@ export async function POST(request: NextRequest) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
+    // Normalize department name (trim whitespace)
+    const normalizedDept = dept.trim()
+
     const result = stmt.run(
       name,
       email || null,
-      dept,
+      normalizedDept,
       natural.D,
       natural.I,
       natural.S,

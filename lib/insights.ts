@@ -67,12 +67,54 @@ export function getAllResults(): ResultRow[] {
   return stmt.all() as ResultRow[]
 }
 
+// Normalize department name (trim whitespace and convert to lowercase for comparison)
+function normalizeDepartmentName(dept: string): string {
+  return dept.trim()
+}
+
+// Get canonical department name (use the first occurrence as the canonical name)
+function getCanonicalDepartmentName(dept: string, allResults: ResultRow[]): string {
+  const normalized = normalizeDepartmentName(dept)
+  // Find the first occurrence of this department (case-insensitive, trimmed)
+  const firstMatch = allResults.find(
+    (r) => normalizeDepartmentName(r.department).toLowerCase() === normalized.toLowerCase()
+  )
+  return firstMatch ? normalizeDepartmentName(firstMatch.department) : normalized
+}
+
 export function getDepartmentData(): DepartmentData[] {
   const results = getAllResults()
-  const departments = [...new Set(results.map((r) => r.department))]
+  
+  // Filter out empty or null departments
+  const validResults = results.filter((r) => r.department && r.department.trim().length > 0)
+  
+  if (validResults.length === 0) {
+    return []
+  }
+  
+  // Group departments by normalized name (case-insensitive, trimmed)
+  const departmentMap = new Map<string, ResultRow[]>()
+  
+  validResults.forEach((r) => {
+    const normalized = normalizeDepartmentName(r.department).toLowerCase()
+    if (!departmentMap.has(normalized)) {
+      departmentMap.set(normalized, [])
+    }
+    departmentMap.get(normalized)!.push(r)
+  })
+  
+  // Get canonical names for each normalized department
+  const departments = Array.from(departmentMap.keys()).map((normalized) => {
+    const firstResult = departmentMap.get(normalized)![0]
+    return getCanonicalDepartmentName(firstResult.department, validResults)
+  })
 
   return departments.map((dept) => {
-    const deptResults = results.filter((r) => r.department === dept)
+    // Filter results that match this department (case-insensitive, trimmed)
+    const normalizedDept = normalizeDepartmentName(dept).toLowerCase()
+    const deptResults = validResults.filter(
+      (r) => normalizeDepartmentName(r.department).toLowerCase() === normalizedDept
+    )
     const count = deptResults.length
 
     // Calculate averages

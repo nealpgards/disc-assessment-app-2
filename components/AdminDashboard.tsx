@@ -741,14 +741,14 @@ export default function AdminDashboard() {
                 <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Insights</h2>
 
                 {/* Compatibility Matrix */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
                   <h3 className="font-semibold text-slate-800 mb-4">Department Compatibility Matrix</h3>
                   {loadingInsights ? (
-                    <p className="text-slate-500">Loading compatibility analysis...</p>
+                    <p className="text-slate-500 py-4">Loading compatibility analysis...</p>
                   ) : insights.compatibility.length > 0 ? (
                     <div className="space-y-4">
                       {insights.compatibility.map((comp, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border">
+                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-3">
                               <span className="font-semibold text-slate-700">{comp.dept1}</span>
@@ -771,19 +771,19 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500">Need at least 2 departments for compatibility analysis</p>
+                    <p className="text-slate-500 py-4">Need at least 2 departments for compatibility analysis</p>
                   )}
                 </div>
 
                 {/* Team Composition Analysis */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
                   <h3 className="font-semibold text-slate-800 mb-4">Team Composition Analysis</h3>
                   {loadingInsights ? (
-                    <p className="text-slate-500">Loading team composition analysis...</p>
+                    <p className="text-slate-500 py-4">Loading team composition analysis...</p>
                   ) : insights.teamComposition.length > 0 ? (
                     <div className="grid md:grid-cols-2 gap-4">
                       {insights.teamComposition.map((comp, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border">
+                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
                           <h4 className="font-semibold text-slate-700 mb-3">{comp.department}</h4>
                           
                           {comp.strengths.length > 0 && (
@@ -831,19 +831,19 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500">No team composition data available</p>
+                    <p className="text-slate-500 py-4">No team composition data available</p>
                   )}
                 </div>
 
                 {/* Communication Style Insights */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
                   <h3 className="font-semibold text-slate-800 mb-4">Communication Style Insights</h3>
                   {loadingInsights ? (
-                    <p className="text-slate-500">Loading communication insights...</p>
+                    <p className="text-slate-500 py-4">Loading communication insights...</p>
                   ) : insights.communicationInsights.length > 0 ? (
                     <div className="space-y-4">
                       {insights.communicationInsights.map((insight, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border">
+                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
                           <div className="flex items-center gap-3 mb-3">
                             <h4 className="font-semibold text-slate-700">{insight.department}</h4>
                             <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
@@ -878,7 +878,7 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-500">No communication insights available</p>
+                    <p className="text-slate-500 py-4">No communication insights available</p>
                   )}
                 </div>
               </div>
