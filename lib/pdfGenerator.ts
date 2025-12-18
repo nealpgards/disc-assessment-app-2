@@ -46,6 +46,14 @@ interface ProfileDescription {
   growth: string
 }
 
+interface CommunicationGuide {
+  styleLabel: string
+  howToCommunicate: string[]
+  howNotToCommunicate: string[]
+  selfPerception: string[]
+  othersPerception: string[]
+}
+
 const profileDescriptions: Record<DISCType, ProfileDescription> = {
   D: {
     name: 'Dominance',
@@ -94,6 +102,93 @@ const profileDescriptions: Record<DISCType, ProfileDescription> = {
       'Under stress, may become overly critical, perfectionistic, or withdrawn. May over-analyze and delay decisions.',
     stressResponse: 'Becomes more critical and withdrawn',
     growth: 'Accept imperfection, make faster decisions, share concerns openly',
+  },
+}
+
+const communicationGuides: Record<DISCType, CommunicationGuide> = {
+  D: {
+    styleLabel: 'Direct, fast-paced, and results-focused communicator',
+    howToCommunicate: [
+      'Lead with the bottom line or decision needed, then add only the most relevant context.',
+      'Be clear about goals, ownership, and timelines – focus on outcomes more than process.',
+      'Offer options and autonomy rather than prescribing every detail.',
+    ],
+    howNotToCommunicate: [
+      'Do not bury key points in long stories or excessive background.',
+      'Avoid vague expectations, indecisive language, or constant revisiting of decisions.',
+      'Do not take their direct questions personally or respond with defensiveness.',
+    ],
+    selfPerception: [
+      'Sees self as confident, decisive, and efficient at getting things done.',
+      'Believes that directness and speed help the team move forward.',
+    ],
+    othersPerception: [
+      'Others may see them as impatient, demanding, or overly blunt when under pressure.',
+      'Some may hesitate to push back or share concerns if they feel rushed or dismissed.',
+    ],
+  },
+  I: {
+    styleLabel: 'Enthusiastic, relational, and expressive communicator',
+    howToCommunicate: [
+      'Start with connection – be warm, positive, and conversational.',
+      'Explain the vision, impact, and “why” behind decisions, not just the facts.',
+      'Invite dialogue, questions, and brainstorming to keep them engaged.',
+    ],
+    howNotToCommunicate: [
+      'Do not be overly formal, distant, or purely transactional.',
+      'Avoid shutting down ideas too quickly or focusing only on problems.',
+      'Do not rely only on one-way communication for important topics.',
+    ],
+    selfPerception: [
+      'Sees self as friendly, encouraging, and good at building relationships.',
+      'Believes their optimism and energy make work more enjoyable for others.',
+    ],
+    othersPerception: [
+      'Others may see them as scattered, overly talkative, or light on follow-through at times.',
+      'Some may feel commitments are made enthusiastically but not always completed.',
+    ],
+  },
+  S: {
+    styleLabel: 'Calm, steady, and supportive communicator',
+    howToCommunicate: [
+      'Provide clear expectations and allow time to process before expecting a response.',
+      'Explain how changes will affect people, routines, and stability.',
+      'Invite their perspective in a low-pressure way and show appreciation for their support.',
+    ],
+    howNotToCommunicate: [
+      'Do not surprise them with last-minute changes or abrupt confrontations.',
+      'Avoid aggressive, high-pressure tactics or rapid-fire decisions with no input.',
+      'Do not minimize their concerns about team harmony or workload.',
+    ],
+    selfPerception: [
+      'Sees self as loyal, dependable, and a calming presence on the team.',
+      'Believes their patience and consistency help others feel safe and supported.',
+    ],
+    othersPerception: [
+      'Others may see them as resistant to change, quiet, or slow to decide.',
+      'Some may underestimate their opinions because they do not always speak first.',
+    ],
+  },
+  C: {
+    styleLabel: 'Thoughtful, precise, and data-driven communicator',
+    howToCommunicate: [
+      'Come prepared with data, structure, and clear reasoning.',
+      'Be specific about expectations, definitions, and quality standards.',
+      'Give time for questions and analysis before requiring a firm decision.',
+    ],
+    howNotToCommunicate: [
+      'Do not be vague, inconsistent, or dismissive of details and risks.',
+      'Avoid pressuring for instant decisions without enough information.',
+      'Do not take their critical questions as personal attacks – they are seeking clarity.',
+    ],
+    selfPerception: [
+      'Sees self as careful, thorough, and committed to doing things right.',
+      'Believes their questions and critique protect quality and reduce risk.',
+    ],
+    othersPerception: [
+      'Others may see them as overly critical, slow, or rigid when standards feel very high.',
+      'Some may feel anxious about “being wrong” in front of them because of their precision.',
+    ],
   },
 }
 
@@ -196,6 +291,11 @@ export async function generatePDFReport(
   const adaptiveProfile = profileDescriptions[scores.primaryAdaptive]
   const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
 
+  const hasDrivingForces = !!result.drivingForces
+
+  // Base page count (may slightly undercount if content flows onto extra pages)
+  const totalPages = hasDrivingForces ? 9 : 8
+
   // ========== PAGE 1: COVER PAGE ==========
   doc.setFillColor(248, 250, 252) // slate-50
   doc.rect(0, 0, pageWidth, pageHeight, 'F')
@@ -277,7 +377,7 @@ export async function generatePDFReport(
   doc.setTextColor(30, 41, 59)
   doc.text(adaptiveProfile.name, margin + boxWidth + 20, yPos + 35)
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 2: EXECUTIVE SUMMARY ==========
@@ -340,7 +440,7 @@ export async function generatePDFReport(
     addWrappedText(doc, shiftText, margin + 5, yPos, contentWidth - 10, 6, 10)
   }
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 3: SCORE BREAKDOWN ==========
@@ -440,7 +540,7 @@ export async function generatePDFReport(
     yPos += 8
   })
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 4: VISUALIZATIONS ==========
@@ -499,7 +599,7 @@ export async function generatePDFReport(
     }
   }
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 5: PROFILE DESCRIPTIONS ==========
@@ -554,7 +654,7 @@ export async function generatePDFReport(
     yPos += 12
   })
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 6: YOUR PERSONALIZED INSIGHTS ==========
@@ -617,10 +717,129 @@ export async function generatePDFReport(
   doc.setTextColor(51, 65, 85)
   addWrappedText(doc, naturalProfile.growth, margin + 5, yPos, contentWidth - 10, 6, 10)
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
-  // ========== PAGE 7: UNDERSTANDING YOUR SCORES & NEXT STEPS ==========
+  // ========== PAGE 7: COMMUNICATION PREFERENCES ==========
+  doc.addPage()
+  yPos = margin
+  addHeader(doc, 'How to Communicate With You')
+
+  yPos = 40
+  const commGuide = communicationGuides[scores.primaryNatural]
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  yPos = addWrappedText(
+    doc,
+    `These guidelines are based primarily on your Natural style (${scores.primaryNatural} – ${naturalProfile.name}). Share this page with your manager and teammates to help them communicate with you more effectively.`,
+    margin,
+    yPos,
+    contentWidth,
+    7,
+    11
+  ) + 6
+
+  // How to communicate
+  doc.setFillColor(248, 250, 252) // slate-50
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F')
+  doc.setDrawColor(22, 163, 74) // emerald-600
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'S')
+  yPos += 8
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(22, 163, 74)
+  doc.text('Do this when communicating with you', margin + 5, yPos)
+  yPos += 8
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  commGuide.howToCommunicate.forEach((tip) => {
+    yPos = addWrappedText(doc, `• ${tip}`, margin + 7, yPos, contentWidth - 12, 5, 9) + 1
+  })
+  yPos += 4
+
+  // How not to communicate
+  if (yPos > pageHeight - 60) {
+    addPageNumber(doc, currentPage, totalPages)
+    currentPage++
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'How to Communicate With You (cont.)')
+    yPos = 40
+  }
+
+  doc.setFillColor(254, 242, 242) // red-50
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F')
+  doc.setDrawColor(239, 68, 68) // red-500
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'S')
+  yPos += 8
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(185, 28, 28)
+  doc.text('Avoid this when communicating with you', margin + 5, yPos)
+  yPos += 8
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  commGuide.howNotToCommunicate.forEach((tip) => {
+    yPos = addWrappedText(doc, `• ${tip}`, margin + 7, yPos, contentWidth - 12, 5, 9) + 1
+  })
+  yPos += 4
+
+  // Self vs others perception
+  if (yPos > pageHeight - 60) {
+    addPageNumber(doc, currentPage, totalPages)
+    currentPage++
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'How to Communicate With You (cont.)')
+    yPos = 40
+  }
+
+  const columnWidth = (contentWidth - 10) / 2
+  const leftX = margin
+  const rightX = margin + columnWidth + 10
+
+  // Self-perception column
+  doc.setFillColor(239, 246, 255) // blue-50
+  doc.roundedRect(leftX, yPos, columnWidth, 40, 3, 3, 'F')
+  doc.setDrawColor(37, 99, 235) // blue-600
+  doc.roundedRect(leftX, yPos, columnWidth, 40, 3, 3, 'S')
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(37, 99, 235)
+  doc.text('How you likely see yourself', leftX + 4, yPos + 8)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  let innerY = yPos + 13
+  commGuide.selfPerception.forEach((item) => {
+    innerY = addWrappedText(doc, `• ${item}`, leftX + 5, innerY, columnWidth - 8, 5, 9) + 1
+  })
+
+  // Others-perception column
+  doc.setFillColor(248, 250, 252) // slate-50
+  doc.roundedRect(rightX, yPos, columnWidth, 40, 3, 3, 'F')
+  doc.setDrawColor(148, 163, 184) // slate-400
+  doc.roundedRect(rightX, yPos, columnWidth, 40, 3, 3, 'S')
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(71, 85, 105)
+  doc.text('How others may see you', rightX + 4, yPos + 8)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  innerY = yPos + 13
+  commGuide.othersPerception.forEach((item) => {
+    innerY = addWrappedText(doc, `• ${item}`, rightX + 5, innerY, columnWidth - 8, 5, 9) + 1
+  })
+
+  addPageNumber(doc, currentPage, totalPages)
+  currentPage++
+
+  // ========== PAGE 8: UNDERSTANDING YOUR SCORES & NEXT STEPS ==========
   doc.addPage()
   yPos = margin
   addHeader(doc, 'Understanding Your Scores & Next Steps')
@@ -690,7 +909,233 @@ The percentages indicate the relative strength of each DISC dimension in your pr
     )
   }
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
+  currentPage++
+
+  // ========== DRIVING FORCES SECTION (if available) ==========
+  if (hasDrivingForces && result.drivingForces) {
+    const dfScores = result.drivingForces.scores || {}
+
+    type PairConfig = {
+      motivator: string
+      centerLabel: string
+      leftCode: string
+      rightCode: string
+      leftLabel: string
+      rightLabel: string
+      color: string
+      description: string
+    }
+
+    const drivingForcePairs: PairConfig[] = [
+      {
+        motivator: 'Knowledge',
+        centerLabel: 'Theoretical',
+        leftCode: 'KI',
+        rightCode: 'KN',
+        leftLabel: 'Instinctive',
+        rightLabel: 'Intellectual',
+        color: '#b91c1c',
+        description:
+          'Instinctive relies on past experience and gut feel, while Intellectual is energized by learning, research, and theory.',
+      },
+      {
+        motivator: 'Utility',
+        centerLabel: 'Utilitarian',
+        leftCode: 'US',
+        rightCode: 'UR',
+        leftLabel: 'Selfless',
+        rightLabel: 'Resourceful',
+        color: '#b45309',
+        description:
+          'Selfless is motivated by helping and completing tasks regardless of personal return, while Resourceful looks for efficiency and strong ROI.',
+      },
+      {
+        motivator: 'Surroundings',
+        centerLabel: 'Aesthetic',
+        leftCode: 'SO',
+        rightCode: 'SH',
+        leftLabel: 'Objective',
+        rightLabel: 'Harmonious',
+        color: '#7e22ce',
+        description:
+          'Objective cares most about function and practicality, while Harmonious values beauty, balance, and how the environment feels.',
+      },
+      {
+        motivator: 'Others',
+        centerLabel: 'Social',
+        leftCode: 'OI',
+        rightCode: 'OA',
+        leftLabel: 'Intentional',
+        rightLabel: 'Altruistic',
+        color: '#047857',
+        description:
+          'Intentional helps others to achieve specific outcomes, while Altruistic is driven to support people simply because they care.',
+      },
+      {
+        motivator: 'Power',
+        centerLabel: 'Individualistic',
+        leftCode: 'PC',
+        rightCode: 'PD',
+        leftLabel: 'Collaborative',
+        rightLabel: 'Commanding',
+        color: '#111827',
+        description:
+          'Collaborative prefers shared influence and supporting the team, while Commanding seeks autonomy, status, and clear authority.',
+      },
+      {
+        motivator: 'Methodologies',
+        centerLabel: 'Traditional',
+        leftCode: 'MR',
+        rightCode: 'MS',
+        leftLabel: 'Receptive',
+        rightLabel: 'Structured',
+        color: '#4b5563',
+        description:
+          'Receptive embraces new ideas and flexible approaches, while Structured prefers proven systems, traditions, and consistency.',
+      },
+    ]
+
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'Your Driving Forces Profile')
+
+    yPos = 40
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+    yPos = addWrappedText(
+      doc,
+      'These six scales show how strongly you lean toward each side of the core motivators that influence your decisions and priorities.',
+      margin,
+      yPos,
+      contentWidth,
+      7,
+      11
+    ) + 8
+
+    const trackLeft = margin + 40
+    const trackRight = pageWidth - margin - 40
+    const trackWidth = trackRight - trackLeft
+
+    drivingForcePairs.forEach((pair) => {
+      if (yPos > pageHeight - 30) {
+        addPageNumber(doc, currentPage, totalPages)
+        currentPage++
+        doc.addPage()
+        yPos = margin
+        addHeader(doc, 'Your Driving Forces Profile (cont.)')
+        yPos = 40
+      }
+
+      const leftRaw = Number(dfScores[pair.leftCode] || 0)
+      const rightRaw = Number(dfScores[pair.rightCode] || 0)
+      const total = leftRaw + rightRaw
+
+      let leftPct = 50
+      let rightPct = 50
+
+      if (total > 0) {
+        leftPct = Math.round((leftRaw / total) * 100)
+        rightPct = 100 - leftPct
+      }
+
+      const indicatorPosition = trackLeft + (rightPct / 100) * trackWidth
+
+      const [r, g, b] = hexToRgb(pair.color)
+
+      // Row header
+      doc.setFontSize(9)
+      doc.setTextColor(100, 116, 139)
+      doc.text(pair.motivator, margin, yPos)
+      doc.text(pair.centerLabel, pageWidth / 2, yPos, { align: 'center' })
+
+      const rowCenterY = yPos + 8
+
+      // Base track
+      doc.setDrawColor(226, 232, 240)
+      doc.setLineWidth(1)
+      doc.line(trackLeft, rowCenterY, trackRight, rowCenterY)
+
+      // Filled segment
+      doc.setDrawColor(r, g, b)
+      doc.setLineWidth(2.5)
+      doc.line(trackLeft, rowCenterY, indicatorPosition, rowCenterY)
+
+      // Ticks at 0/25/50/75/100
+      doc.setDrawColor(209, 213, 219)
+      doc.setLineWidth(0.5)
+      ;[0, 25, 50, 75, 100].forEach((v) => {
+        const x = trackLeft + (v / 100) * trackWidth
+        doc.line(x, rowCenterY - 2, x, rowCenterY + 2)
+      })
+
+      // Indicator knob
+      doc.setFillColor(r, g, b)
+      doc.setDrawColor(255, 255, 255)
+      doc.circle(indicatorPosition, rowCenterY, 2.5, 'FD')
+
+      // Left circle
+      const leftCircleX = margin + 15
+      doc.setFillColor(r, g, b)
+      doc.setDrawColor(r, g, b)
+      doc.circle(leftCircleX, rowCenterY, 6, 'FD')
+      doc.setFontSize(8)
+      doc.setTextColor(255, 255, 255)
+      doc.text(String(leftPct), leftCircleX, rowCenterY + 2, { align: 'center' })
+
+      // Right circle
+      const rightCircleX = pageWidth - margin - 15
+      doc.setFillColor(r, g, b)
+      doc.setDrawColor(r, g, b)
+      doc.circle(rightCircleX, rowCenterY, 6, 'FD')
+      doc.text(String(rightPct), rightCircleX, rowCenterY + 2, { align: 'center' })
+
+      // Labels under circles
+      doc.setFontSize(8)
+      doc.setTextColor(55, 65, 81)
+      doc.text(pair.leftLabel, leftCircleX, rowCenterY + 11, { align: 'center' })
+      doc.text(pair.rightLabel, rightCircleX, rowCenterY + 11, { align: 'center' })
+
+      yPos += 20
+    })
+
+    yPos += 6
+
+    if (yPos > pageHeight - 40) {
+      addPageNumber(doc, currentPage, totalPages)
+      currentPage++
+      doc.addPage()
+      yPos = margin
+      addHeader(doc, 'Your Driving Forces Profile (cont.)')
+      yPos = 40
+    }
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text('What each scale means', margin, yPos)
+    yPos += 8
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(71, 85, 105)
+
+    drivingForcePairs.forEach((pair) => {
+      const text = `${pair.leftLabel} → ${pair.rightLabel}: ${pair.description}`
+      yPos = addWrappedText(doc, text, margin, yPos, contentWidth, 5, 9) + 2
+      if (yPos > pageHeight - 30) {
+        addPageNumber(doc, currentPage, totalPages)
+        currentPage++
+        doc.addPage()
+        yPos = margin
+        addHeader(doc, 'Your Driving Forces Profile (cont.)')
+        yPos = 40
+      }
+    })
+
+    addPageNumber(doc, currentPage, totalPages)
+  }
 
   // Save the PDF
   const fileName = `DISC_Assessment_${result.name.replace(/\s+/g, '_')}_${result.date}.pdf`
@@ -714,10 +1159,62 @@ interface AdminDashboardData {
   shifters: Result[]
 }
 
+interface AdminDepartmentCollaboration {
+  compatibilityMatrix: Array<{
+    dept1: string
+    dept2: string
+    score: number
+    details: {
+      primaryType1: DISCType
+      primaryType2: DISCType
+      naturalCompatibility: number
+      adaptiveCompatibility: number
+      scoreDifference: number
+      reasoning: string
+    }
+  }>
+  profileComparisons: Array<{
+    dept1: string
+    dept2: string
+    comparison: {
+      natural: {
+        dept1Scores: Scores
+        dept2Scores: Scores
+        differences: Scores
+        primaryType1: DISCType
+        primaryType2: DISCType
+      }
+      adaptive: {
+        dept1Scores: Scores
+        dept2Scores: Scores
+        differences: Scores
+        primaryType1: DISCType
+        primaryType2: DISCType
+      }
+      summary: string
+    }
+  }>
+  recommendations: Array<{
+    dept1: string
+    dept2: string
+    recommendations: Array<{
+      text: string
+      priority: 'high' | 'medium' | 'low'
+      category: 'communication' | 'workflow' | 'conflict' | 'synergy'
+    }>
+  }>
+  metadata: {
+    departmentCount: number
+    totalPairs: number
+    available: boolean
+  }
+}
+
 interface AdminInsights {
   compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
   teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
   communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+  departmentCollaboration?: AdminDepartmentCollaboration
 }
 
 export async function generateAdminDashboardPDF(
@@ -1092,42 +1589,232 @@ export async function generateAdminDashboardPDF(
 
   // ========== PAGE 6+: INSIGHTS ==========
   if (insights) {
-    // Compatibility Matrix
-    if (insights.compatibility.length > 0) {
+    const collaboration = insights.departmentCollaboration
+
+    // Department Compatibility / Collaboration (uses new analysis when available, falls back to basic compatibility)
+    const compatibilityEntries =
+      collaboration && collaboration.metadata?.available && collaboration.compatibilityMatrix?.length
+        ? collaboration.compatibilityMatrix.map((entry) => ({
+            dept1: entry.dept1,
+            dept2: entry.dept2,
+            score: entry.score,
+            reasoning: entry.details.reasoning,
+            naturalCompatibility: entry.details.naturalCompatibility,
+            adaptiveCompatibility: entry.details.adaptiveCompatibility,
+          }))
+        : insights.compatibility.map((comp) => ({
+            dept1: comp.dept1,
+            dept2: comp.dept2,
+            score: comp.score,
+            reasoning: comp.reasoning,
+          }))
+
+    if (compatibilityEntries.length > 0) {
       checkNewPage(30)
-      addHeader('Department Compatibility Matrix')
+      addHeader('Department Compatibility Overview')
       yPos += 5
 
-      insights.compatibility.forEach((comp) => {
-        checkNewPage(25)
-        doc.setFillColor(255, 255, 255)
-        doc.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'F')
-        doc.setDrawColor(200, 200, 200)
-        doc.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'S')
-
-        doc.setFontSize(11)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(30, 41, 59)
-        doc.text(`${comp.dept1} ↔ ${comp.dept2}`, margin + 5, yPos + 8)
-        
-        const scoreColor = comp.score >= 80 ? [16, 185, 129] : comp.score >= 60 ? [245, 158, 11] : [239, 68, 68]
-        doc.setFontSize(16)
-        doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2])
-        doc.text(`${comp.score}%`, margin + contentWidth - 20, yPos + 8, { align: 'right' })
-
-        doc.setFontSize(9)
+      // If we have collaboration metadata, include a short summary
+      if (collaboration && collaboration.metadata) {
+        doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
-        doc.setTextColor(71, 85, 105)
-        const reasoningLines = doc.splitTextToSize(comp.reasoning, contentWidth - 10)
-        doc.text(reasoningLines, margin + 5, yPos + 15)
-        yPos += 20 + reasoningLines.length * 4
-      })
+        doc.setTextColor(51, 65, 85)
+        const metaText = `Analyzed ${collaboration.metadata.departmentCount} departments across ${collaboration.metadata.totalPairs} department pairings.`
+        const metaLines = doc.splitTextToSize(metaText, contentWidth)
+        doc.text(metaLines, margin, yPos)
+        yPos += metaLines.length * 5 + 6
+      }
+
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(30, 41, 59)
+      doc.text('Top Department Pairings', margin, yPos)
+      yPos += 8
+
+      compatibilityEntries
+        .slice()
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10)
+        .forEach((comp) => {
+          checkNewPage(28)
+          doc.setFillColor(255, 255, 255)
+          doc.roundedRect(margin, yPos, contentWidth, 24, 2, 2, 'F')
+          doc.setDrawColor(200, 200, 200)
+          doc.roundedRect(margin, yPos, contentWidth, 24, 2, 2, 'S')
+
+          doc.setFontSize(11)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(30, 41, 59)
+          doc.text(`${comp.dept1} ↔ ${comp.dept2}`, margin + 5, yPos + 8)
+          
+          const scoreColor = comp.score >= 80 ? [16, 185, 129] : comp.score >= 60 ? [245, 158, 11] : [239, 68, 68]
+          doc.setFontSize(16)
+          doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2])
+          doc.text(`${comp.score}%`, margin + contentWidth - 20, yPos + 8, { align: 'right' })
+
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(100, 116, 139)
+          if (typeof (comp as any).naturalCompatibility === 'number' && typeof (comp as any).adaptiveCompatibility === 'number') {
+            doc.text(
+              `Natural compatibility: ${(comp as any).naturalCompatibility}%   Adaptive compatibility: ${(comp as any).adaptiveCompatibility}%`,
+              margin + 5,
+              yPos + 15
+            )
+          }
+
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(71, 85, 105)
+          const reasoningLines = doc.splitTextToSize(comp.reasoning, contentWidth - 10)
+          doc.text(reasoningLines, margin + 5, yPos + 19)
+          yPos += 24 + reasoningLines.length * 3.5
+        })
 
       addPageNumber(currentPage, 10)
       currentPage++
     }
 
-    // Team Composition
+    // Department Profile Comparisons (new collaboration analysis)
+    if (
+      collaboration &&
+      collaboration.metadata?.available &&
+      collaboration.profileComparisons &&
+      collaboration.profileComparisons.length > 0
+    ) {
+      doc.addPage()
+      currentPage++
+      yPos = margin
+      addHeader('Department Profile Comparisons')
+      yPos += 3
+
+      const comparisons = collaboration.profileComparisons.slice(0, 5)
+
+      comparisons.forEach((comp) => {
+        checkNewPage(40)
+        doc.setFillColor(255, 255, 255)
+        doc.roundedRect(margin, yPos, contentWidth, 32, 2, 2, 'F')
+        doc.setDrawColor(200, 200, 200)
+        doc.roundedRect(margin, yPos, contentWidth, 32, 2, 2, 'S')
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(30, 41, 59)
+        doc.text(`${comp.dept1} vs ${comp.dept2}`, margin + 5, yPos + 7)
+
+        // Natural primary types
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(71, 85, 105)
+        doc.text(
+          `Natural: ${comp.comparison.natural.primaryType1} vs ${comp.comparison.natural.primaryType2}`,
+          margin + 5,
+          yPos + 13
+        )
+
+        // Simple D/I/S/C line for natural and adaptive
+        const nat = comp.comparison.natural
+        const adp = comp.comparison.adaptive
+        doc.text(
+          `Natural scores  - ${comp.dept1}: D${nat.dept1Scores.D} I${nat.dept1Scores.I} S${nat.dept1Scores.S} C${nat.dept1Scores.C}`,
+          margin + 5,
+          yPos + 18
+        )
+        doc.text(
+          `                 ${comp.dept2}: D${nat.dept2Scores.D} I${nat.dept2Scores.I} S${nat.dept2Scores.S} C${nat.dept2Scores.C}`,
+          margin + 5,
+          yPos + 23
+        )
+        doc.text(
+          `Adaptive scores - ${comp.dept1}: D${adp.dept1Scores.D} I${adp.dept1Scores.I} S${adp.dept1Scores.S} C${adp.dept1Scores.C}`,
+          margin + 5,
+          yPos + 28
+        )
+
+        yPos += 34
+
+        // Summary text below card
+        checkNewPage(14)
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(51, 65, 85)
+        const summaryLines = doc.splitTextToSize(comp.comparison.summary, contentWidth)
+        doc.text(summaryLines, margin, yPos)
+        yPos += summaryLines.length * 5 + 6
+      })
+
+      addPageNumber(currentPage, 10)
+    }
+
+    // Collaboration Recommendations (new collaboration analysis)
+    if (
+      collaboration &&
+      collaboration.metadata?.available &&
+      collaboration.recommendations &&
+      collaboration.recommendations.length > 0
+    ) {
+      doc.addPage()
+      currentPage++
+      yPos = margin
+      addHeader('Collaboration Recommendations')
+      yPos += 3
+
+      const priorityRank: Record<'high' | 'medium' | 'low', number> = {
+        high: 0,
+        medium: 1,
+        low: 2,
+      }
+
+      const recSets = collaboration.recommendations
+        .slice()
+        .sort((a, b) => {
+          const aHigh = a.recommendations.filter((r) => r.priority === 'high').length
+          const bHigh = b.recommendations.filter((r) => r.priority === 'high').length
+          return bHigh - aHigh
+        })
+        .slice(0, 5)
+
+      recSets.forEach((set) => {
+        checkNewPage(45)
+        doc.setFillColor(255, 255, 255)
+        doc.roundedRect(margin, yPos, contentWidth, 36, 2, 2, 'F')
+        doc.setDrawColor(200, 200, 200)
+        doc.roundedRect(margin, yPos, contentWidth, 36, 2, 2, 'S')
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(30, 41, 59)
+        doc.text(`${set.dept1} ↔ ${set.dept2}`, margin + 5, yPos + 8)
+
+        let recY = yPos + 14
+        set.recommendations
+          .slice()
+          .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority])
+          .slice(0, 4)
+          .forEach((rec) => {
+            if (recY > yPos + 32) return
+            const color =
+              rec.priority === 'high' ? [220, 38, 38] : rec.priority === 'medium' ? [217, 119, 6] : [37, 99, 235]
+
+            doc.setFontSize(8)
+            doc.setFont('helvetica', 'bold')
+            doc.setTextColor(color[0], color[1], color[2])
+            doc.text(rec.priority.toUpperCase(), margin + 5, recY)
+
+            doc.setFont('helvetica', 'normal')
+            doc.setTextColor(51, 65, 85)
+            const recLines = doc.splitTextToSize(`${rec.category}: ${rec.text}`, contentWidth - 40)
+            doc.text(recLines, margin + 30, recY)
+            recY += recLines.length * 4.5 + 3
+          })
+
+        yPos += 38
+      })
+
+      addPageNumber(currentPage, 10)
+    }
+
+    // Team Composition (legacy insights)
     if (insights.teamComposition.length > 0) {
       checkNewPage(30)
       addHeader('Team Composition Analysis')
@@ -1184,10 +1871,30 @@ export async function generateAdminDashboardPDF(
       currentPage++
     }
 
-    // Communication Insights
+    // Communication Insights (legacy insights)
     if (insights.communicationInsights.length > 0) {
       checkNewPage(30)
       addHeader('Communication Style Insights')
+      yPos += 5
+
+      // Team-wide communication style snapshot based on Natural styles
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(30, 41, 59)
+      doc.text('Team Communication Preferences (Natural Styles)', margin, yPos)
+      yPos += 7
+
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(51, 65, 85)
+      dashboardData.teamNaturalDist.forEach((item) => {
+        const guide = communicationGuides[item.name as DISCType]
+        const line = `${item.name} - ${profileDescriptions[item.name as DISCType].name} (${item.natural} people): ${guide.styleLabel}`
+        const lines = doc.splitTextToSize(line, contentWidth)
+        doc.text(lines, margin + 5, yPos)
+        yPos += lines.length * 4.5 + 2
+      })
+
       yPos += 5
 
       insights.communicationInsights.forEach((insight) => {

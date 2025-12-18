@@ -11,11 +11,13 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  Cell,
 } from 'recharts'
 import { Download, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { generateAdminDashboardPDF } from '@/lib/pdfGenerator'
+import DrivingForcesChart from '@/components/DrivingForcesChart'
 
 // Types
 type DISCType = 'D' | 'I' | 'S' | 'C'
@@ -63,6 +65,7 @@ interface Result {
   name: string
   email?: string
   dept: string
+  teamCode?: string
   natural: Scores
   adaptive: Scores
   primaryNatural: DISCType
@@ -78,6 +81,16 @@ interface DrivingForceDescription {
   traits: string[]
   color: string
   bgColor: string
+}
+
+interface CommunicationGuide {
+  styleLabel: string
+  howToCommunicate: string[]
+  howNotToCommunicate: string[]
+}
+
+interface AdminDashboardProps {
+  initialTeamCode?: string
 }
 
 const profileDescriptions: Record<DISCType, ProfileDescription> = {
@@ -128,6 +141,61 @@ const profileDescriptions: Record<DISCType, ProfileDescription> = {
       'Under stress, may become overly critical, perfectionistic, or withdrawn. May over-analyze and delay decisions.',
     stressResponse: 'Becomes more critical and withdrawn',
     growth: 'Accept imperfection, make faster decisions, share concerns openly',
+  },
+}
+
+const communicationGuides: Record<DISCType, CommunicationGuide> = {
+  D: {
+    styleLabel: 'Direct, fast-paced, and results-focused',
+    howToCommunicate: [
+      'Lead with the bottom line, key decision, or outcome needed.',
+      'Keep communication brief, clear, and focused on results and ownership.',
+      'Provide options and autonomy rather than prescribing every step.',
+    ],
+    howNotToCommunicate: [
+      'Avoid long, unfocused discussions with no clear decision.',
+      'Do not be vague or indecisive about priorities and accountability.',
+      'Avoid taking their directness personally or responding emotionally.',
+    ],
+  },
+  I: {
+    styleLabel: 'Enthusiastic, relational, and expressive',
+    howToCommunicate: [
+      'Start with connection and context before diving into details.',
+      'Use collaborative discussions, stories, and examples.',
+      'Offer recognition, encouragement, and visible enthusiasm.',
+    ],
+    howNotToCommunicate: [
+      'Avoid overly formal, purely transactional communication.',
+      'Do not shut down ideas too quickly without acknowledging them.',
+      'Avoid isolating them with only one-way, written updates for important topics.',
+    ],
+  },
+  S: {
+    styleLabel: 'Calm, steady, and supportive',
+    howToCommunicate: [
+      'Provide clear expectations and allow time to process and respond.',
+      'Explain how decisions will impact people, routines, and stability.',
+      'Invite their input in a safe, low-pressure way.',
+    ],
+    howNotToCommunicate: [
+      'Avoid last-minute changes and surprise demands.',
+      'Do not use aggressive, confrontational, or high-pressure tactics.',
+      'Avoid dismissing concerns about team morale or harmony.',
+    ],
+  },
+  C: {
+    styleLabel: 'Precise, thoughtful, and data-driven',
+    howToCommunicate: [
+      'Come prepared with data, structure, and clear reasoning.',
+      'Give time for questions, analysis, and clarification.',
+      'Be specific about standards, definitions, and processes.',
+    ],
+    howNotToCommunicate: [
+      'Avoid vague requests, shifting expectations, or missing details.',
+      'Do not pressure for instant decisions without sufficient information.',
+      'Avoid taking their questions as criticism – they are seeking clarity.',
+    ],
   },
 }
 
@@ -230,13 +298,21 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
   },
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps) {
   const router = useRouter()
   const [allResults, setAllResults] = useState<Result[]>([])
+  const [selectedTeamCode, setSelectedTeamCode] = useState<string>(initialTeamCode || '')
+  const [availableTeamCodes, setAvailableTeamCodes] = useState<string[]>([])
   const [insights, setInsights] = useState<{
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
     teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
     communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+    departmentCollaboration?: {
+      compatibilityMatrix: Array<{ dept1: string; dept2: string; score: number; details: any }>
+      profileComparisons: Array<{ dept1: string; dept2: string; comparison: any }>
+      recommendations: Array<{ dept1: string; dept2: string; recommendations: any[] }>
+      metadata: { departmentCount: number; totalPairs: number; available: boolean }
+    }
     metadata?: {
       departmentCount: number
       totalResults: number
@@ -255,7 +331,22 @@ export default function AdminDashboard() {
     setLoadingResults(true)
     setResultsError(null)
     try {
-      const res = await fetch('/api/results')
+      // First, fetch all results to get available team codes
+      const allRes = await fetch('/api/results')
+      if (!allRes.ok) {
+        throw new Error(`Failed to fetch results: ${allRes.status} ${allRes.statusText}`)
+      }
+      const allData = await allRes.json()
+      
+      // Extract unique team codes from all results
+      const teamCodes = [...new Set(allData.map((r: Result) => r.teamCode).filter(Boolean))] as string[]
+      setAvailableTeamCodes(teamCodes.sort())
+      
+      // Then fetch filtered results if team code is selected
+      const url = selectedTeamCode 
+        ? `/api/results?teamCode=${encodeURIComponent(selectedTeamCode)}`
+        : '/api/results'
+      const res = await fetch(url)
       if (!res.ok) {
         throw new Error(`Failed to fetch results: ${res.status} ${res.statusText}`)
       }
@@ -274,6 +365,18 @@ export default function AdminDashboard() {
     setInsightsError(null)
     try {
       const res = await fetch('/api/insights')
+      if (!res.ok) {
+        let errorMessage = `Failed to fetch insights: ${res.status} ${res.statusText}`
+        try {
+          const errorData = await res.json()
+          if (errorData && (errorData.error || errorData.details)) {
+            errorMessage = errorData.error || errorData.details
+          }
+        } catch {
+          // Ignore JSON parse errors and use generic message
+        }
+        throw new Error(errorMessage)
+      }
       const data = await res.json()
       
       console.log('Insights API response:', {
@@ -286,15 +389,12 @@ export default function AdminDashboard() {
         metadata: data.metadata,
       })
       
-      if (!res.ok) {
-        throw new Error(data.error || data.details || `Failed to fetch insights: ${res.status} ${res.statusText}`)
-      }
-      
       // Ensure we have the expected structure
       const insightsData = {
         compatibility: Array.isArray(data.compatibility) ? data.compatibility : [],
         teamComposition: Array.isArray(data.teamComposition) ? data.teamComposition : [],
         communicationInsights: Array.isArray(data.communicationInsights) ? data.communicationInsights : [],
+        departmentCollaboration: data.departmentCollaboration || undefined,
         metadata: data.metadata || {
           departmentCount: 0,
           totalResults: 0,
@@ -317,6 +417,7 @@ export default function AdminDashboard() {
         compatibility: [],
         teamComposition: [],
         communicationInsights: [],
+        departmentCollaboration: undefined,
         metadata: {
           departmentCount: 0,
           totalResults: 0,
@@ -335,7 +436,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadResults()
     loadInsights()
-  }, [])
+  }, [selectedTeamCode]) // Reload when team code changes
 
   // Refresh on window focus
   useEffect(() => {
@@ -436,6 +537,20 @@ export default function AdminDashboard() {
   })
 
   const shifters = allResults.filter((r) => r.primaryNatural !== r.primaryAdaptive)
+  const departmentCollaboration = insights?.departmentCollaboration
+
+  const hasDrivingForces = allResults.some((r) => r.drivingForces)
+  const aggregatedDrivingForcesScores = hasDrivingForces
+    ? allResults
+        .filter((r) => r.drivingForces && r.drivingForces.scores)
+        .reduce<Record<string, number>>((acc, result) => {
+          const scores = result.drivingForces!.scores
+          Object.entries(scores).forEach(([key, value]) => {
+            acc[key] = (acc[key] || 0) + (value || 0)
+          })
+          return acc
+        }, {})
+    : null
 
   if (allResults.length === 0 && !loadingResults) {
     return (
@@ -467,10 +582,24 @@ export default function AdminDashboard() {
             <div>
               <h1 className="text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
               <p className="text-slate-600">
-                {allResults.length} assessments • Natural & Adaptive Profiles
+                {allResults.length} assessments {selectedTeamCode ? `for team ${selectedTeamCode}` : '(all teams)'} • Natural & Adaptive Profiles
               </p>
             </div>
             <div className="flex gap-3">
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedTeamCode}
+                  onChange={(e) => setSelectedTeamCode(e.target.value)}
+                  className="px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">All Teams</option>
+                  {availableTeamCodes.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <Button
                 variant="outline"
                 onClick={refreshData}
@@ -666,6 +795,81 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Team Communication Styles */}
+          <div className="bg-slate-50 rounded-xl p-6 mb-8">
+            <h3 className="font-semibold text-slate-800 mb-2">How Your Team Likes to Communicate</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              Based on each person&apos;s Natural DISC style. Use this view to tailor meetings, feedback, and messaging.
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart
+                    data={(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => ({
+                      type,
+                      label: communicationGuides[type].styleLabel,
+                      count: allResults.filter((r) => r.primaryNatural === type).length,
+                      fill: profileDescriptions[type].color,
+                    }))}
+                    barGap={6}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="type" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip
+                      formatter={(value, _name, props) => [
+                        value,
+                        (props && 'label' in props.payload ? props.payload.label : 'Style') as string,
+                      ]}
+                    />
+                    <Bar dataKey="count" name="People" radius={[4, 4, 0, 0]}>
+                      {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
+                        <Cell key={type} fill={profileDescriptions[type].color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => {
+                  const count = allResults.filter((r) => r.primaryNatural === type).length
+                  const guide = communicationGuides[type]
+                  return (
+                    <div key={type} className="bg-white rounded-lg p-3 border border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold text-white"
+                            style={{ backgroundColor: profileDescriptions[type].color }}
+                          >
+                            {type}
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">
+                              {profileDescriptions[type].name}
+                            </p>
+                            <p className="text-xs text-slate-500">{guide.styleLabel}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-600">
+                          {count} {count === 1 ? 'person' : 'people'}
+                        </span>
+                      </div>
+                      <ul className="mt-1 space-y-1 text-xs text-slate-600">
+                        {guide.howToCommunicate.slice(0, 2).map((tip, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5">
+                            <span className="mt-[2px] text-emerald-500">✓</span>
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
           {/* All Results Table */}
           <div className="bg-slate-50 rounded-xl p-6 mb-8">
             <h3 className="font-semibold text-slate-800 mb-4">All Employee Results</h3>
@@ -674,6 +878,7 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="border-b border-slate-200">
                     <th className="text-left py-3 px-3 font-semibold text-slate-700">Name</th>
+                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Team Code</th>
                     <th className="text-left py-3 px-3 font-semibold text-slate-700">Dept</th>
                     <th className="text-center py-3 px-2 font-semibold text-emerald-700">Natural</th>
                     <th className="text-center py-3 px-2 font-semibold text-orange-700">Adaptive</th>
@@ -697,6 +902,15 @@ export default function AdminDashboard() {
                   {allResults.map((r, i) => (
                     <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
                       <td className="py-3 px-3 font-medium">{r.name}</td>
+                      <td className="py-3 px-3">
+                        {r.teamCode ? (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                            {r.teamCode}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="py-3 px-3">{r.dept}</td>
                       <td className="py-3 px-2 text-center">
                         <span
@@ -742,290 +956,421 @@ export default function AdminDashboard() {
           </div>
 
           {/* Driving Forces Analytics */}
-          {allResults.some((r) => r.drivingForces) && (
-            <>
-              <div className="border-t-2 border-slate-200 pt-8 mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Driving Forces Analytics</h2>
-
-                {/* Driving Forces Distribution */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8">
-                  <h3 className="font-semibold text-slate-800 mb-4">Primary Driving Forces Distribution</h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                      (motivator) => {
-                        const resultsWithDF = allResults.filter((r) => r.drivingForces)
-                        const distribution = {
-                          option1: 0,
-                          option2: 0,
-                        }
-                        resultsWithDF.forEach((r) => {
-                          const primary = r.drivingForces!.primaryForces[motivator]
-                          if (
-                            (motivator === 'Knowledge' && primary === 'KI') ||
-                            (motivator === 'Utility' && primary === 'US') ||
-                            (motivator === 'Surroundings' && primary === 'SO') ||
-                            (motivator === 'Others' && primary === 'OI') ||
-                            (motivator === 'Power' && primary === 'PC') ||
-                            (motivator === 'Methodologies' && primary === 'MR')
-                          ) {
-                            distribution.option1++
-                          } else {
-                            distribution.option2++
-                          }
-                        })
-                        const option1Type =
-                          motivator === 'Knowledge'
-                            ? 'KI'
-                            : motivator === 'Utility'
-                              ? 'US'
-                              : motivator === 'Surroundings'
-                                ? 'SO'
-                                : motivator === 'Others'
-                                  ? 'OI'
-                                  : motivator === 'Power'
-                                    ? 'PC'
-                                    : 'MR'
-                        const option2Type =
-                          motivator === 'Knowledge'
-                            ? 'KN'
-                            : motivator === 'Utility'
-                              ? 'UR'
-                              : motivator === 'Surroundings'
-                                ? 'SH'
-                                : motivator === 'Others'
-                                  ? 'OA'
-                                  : motivator === 'Power'
-                                    ? 'PD'
-                                    : 'MS'
-                        const option1Desc = drivingForceDescriptions[option1Type as DrivingForceType]
-                        const option2Desc = drivingForceDescriptions[option2Type as DrivingForceType]
-
-                        return (
-                          <div key={motivator} className="bg-white rounded-lg p-4 border">
-                            <h4 className="font-semibold text-slate-700 mb-3">{motivator}</h4>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-3">
-                                <div className="w-32 text-xs font-medium" style={{ color: option1Desc.color }}>
-                                  {option1Desc.name}
-                                </div>
-                                <div className="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      width: `${(distribution.option1 / resultsWithDF.length) * 100}%`,
-                                      backgroundColor: option1Desc.color,
-                                    }}
-                                  />
-                                </div>
-                                <div className="w-12 text-right text-xs font-semibold">
-                                  {distribution.option1} ({Math.round((distribution.option1 / resultsWithDF.length) * 100)}%)
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <div className="w-32 text-xs font-medium" style={{ color: option2Desc.color }}>
-                                  {option2Desc.name}
-                                </div>
-                                <div className="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      width: `${(distribution.option2 / resultsWithDF.length) * 100}%`,
-                                      backgroundColor: option2Desc.color,
-                                    }}
-                                  />
-                                </div>
-                                <div className="w-12 text-right text-xs font-semibold">
-                                  {distribution.option2} ({Math.round((distribution.option2 / resultsWithDF.length) * 100)}%)
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      }
-                    )}
-                  </div>
-                </div>
+          {hasDrivingForces && aggregatedDrivingForcesScores && (
+            <div className="border-t-2 border-slate-200 pt-8 mb-8">
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">Team Driving Forces Profile</h2>
+              <p className="text-slate-600 text-sm mb-6 max-w-3xl">
+                Aggregated Driving Forces scores across all employees with Driving Forces data, showing where your team
+                collectively leans on each motivator pair.
+              </p>
+              <div className="bg-slate-50 rounded-xl p-6">
+                <DrivingForcesChart
+                  scores={aggregatedDrivingForcesScores}
+                  title="Driving Forces (Team View)"
+                  subtitle="Each row shows your team’s relative pull toward each side of the motivator."
+                />
               </div>
-            </>
+            </div>
           )}
 
-          {/* Department Collaboration Insights */}
+          {/* Department Collaboration Analysis */}
           <div className="border-t-2 border-slate-200 pt-8 mb-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Insights</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Analysis</h2>
             
-            {!insights && !loadingInsights && (
+            {loadingInsights && (
+              <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                <p className="text-slate-500 text-center py-8">Loading department collaboration analysis...</p>
+              </div>
+            )}
+
+            {!loadingInsights && !departmentCollaboration && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-sm font-semibold text-amber-800 mb-1">Insights Not Loaded</p>
+                <p className="text-sm font-semibold text-amber-800 mb-1">Analysis Not Available</p>
                 <p className="text-sm text-amber-700">
-                  Insights data has not been loaded yet. Click refresh to load insights.
+                  {insights?.metadata?.departmentCount === 0
+                    ? 'No department data available. Complete assessments to see collaboration analysis.'
+                    : insights?.metadata?.departmentCount === 1
+                      ? 'Need at least 2 departments with results to analyze collaboration.'
+                      : 'Department collaboration data has not been loaded. Click refresh to load analysis.'}
                 </p>
               </div>
             )}
-            
-            {insights && (
-              <>
 
-                {/* Compatibility Matrix */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
-                  <h3 className="font-semibold text-slate-800 mb-4">Department Compatibility Matrix</h3>
-                  {loadingInsights ? (
-                    <p className="text-slate-500 py-4">Loading compatibility analysis...</p>
-                  ) : insights.compatibility.length > 0 ? (
-                    <div className="space-y-4">
-                      {insights.compatibility.map((comp, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <span className="font-semibold text-slate-700">{comp.dept1}</span>
-                              <span className="text-slate-400">↔</span>
-                              <span className="font-semibold text-slate-700">{comp.dept2}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-2xl font-bold" style={{ color: comp.score >= 80 ? '#10b981' : comp.score >= 60 ? '#f59e0b' : '#ef4444' }}>
-                                {comp.score}%
-                              </div>
-                              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold ${
-                                comp.score >= 80 ? 'bg-emerald-500' : comp.score >= 60 ? 'bg-amber-500' : 'bg-red-500'
-                              }`}>
-                                {comp.score >= 80 ? '✓' : comp.score >= 60 ? '~' : '!'}
-                              </div>
+            {!loadingInsights && departmentCollaboration && (
+              <>
+                {!departmentCollaboration.metadata?.available ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p className="text-sm font-semibold text-blue-800 mb-1">Insufficient Data</p>
+                    <p className="text-sm text-blue-700">
+                      Need at least 2 departments with results to analyze collaboration. Currently have{' '}
+                      {departmentCollaboration.metadata?.departmentCount || 0} department(s).
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Tab Navigation */}
+                    <div className="flex gap-2 mb-6 border-b border-slate-200">
+                      <button
+                        className="px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-600"
+                        onClick={() => {}}
+                      >
+                        Compatibility Matrix
+                      </button>
+                    </div>
+
+                    {/* Compatibility Matrix Heatmap */}
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                      <h3 className="font-semibold text-slate-800 mb-4">Compatibility Matrix</h3>
+                      {departmentCollaboration.compatibilityMatrix &&
+                      Array.isArray(departmentCollaboration.compatibilityMatrix) &&
+                      departmentCollaboration.compatibilityMatrix.length > 0 ? (
+                        <div className="space-y-4">
+                          {/* Heatmap Grid */}
+                          <div className="bg-white rounded-lg p-4 border border-slate-200 overflow-x-auto">
+                            <div className="min-w-[600px]">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr>
+                                    <th className="text-left py-2 px-3 font-semibold text-slate-700"></th>
+                                    {Array.from(
+                                      new Set(
+                                        departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                          m.dept1,
+                                          m.dept2,
+                                        ])
+                                      )
+                                    )
+                                      .sort()
+                                      .map((dept) => (
+                                        <th
+                                          key={dept}
+                                          className="text-center py-2 px-2 font-semibold text-slate-700 text-xs"
+                                        >
+                                          {dept}
+                                        </th>
+                                      ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {Array.from(
+                                    new Set(
+                                      departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                        m.dept1,
+                                        m.dept2,
+                                      ])
+                                    )
+                                  )
+                                    .sort()
+                                    .map((dept1) => (
+                                      <tr key={dept1}>
+                                        <td className="py-2 px-3 font-medium text-slate-700 text-xs">{dept1}</td>
+                                        {Array.from(
+                                          new Set(
+                                            departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                              m.dept1,
+                                              m.dept2,
+                                            ])
+                                          )
+                                        )
+                                          .sort()
+                                          .map((dept2) => {
+                                            if (dept1 === dept2) {
+                                              return (
+                                                <td key={dept2} className="py-2 px-2 text-center">
+                                                  <div className="w-12 h-12 rounded bg-slate-200 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                                    —
+                                                  </div>
+                                                </td>
+                                              )
+                                            }
+                                            const entry = departmentCollaboration.compatibilityMatrix.find(
+                                              (m) =>
+                                                (m.dept1 === dept1 && m.dept2 === dept2) ||
+                                                (m.dept1 === dept2 && m.dept2 === dept1)
+                                            )
+                                            if (!entry) {
+                                              return (
+                                                <td key={dept2} className="py-2 px-2 text-center">
+                                                  <div className="w-12 h-12 rounded bg-slate-100"></div>
+                                                </td>
+                                              )
+                                            }
+                                            const colorClass =
+                                              entry.score >= 80
+                                                ? 'bg-emerald-500 hover:bg-emerald-600'
+                                                : entry.score >= 60
+                                                  ? 'bg-amber-500 hover:bg-amber-600'
+                                                  : 'bg-red-500 hover:bg-red-600'
+                                            return (
+                                              <td key={dept2} className="py-2 px-2 text-center">
+                                                <div
+                                                  className={`w-12 h-12 rounded ${colorClass} flex items-center justify-center text-white text-xs font-bold cursor-pointer transition-colors`}
+                                                  title={`${entry.dept1} ↔ ${entry.dept2}: ${entry.score}% - ${entry.details.reasoning}`}
+                                                >
+                                                  {entry.score}
+                                                </div>
+                                              </td>
+                                            )
+                                          })}
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
                             </div>
                           </div>
-                          <p className="text-sm text-slate-600">{comp.reasoning}</p>
+
+                          {/* Detailed List */}
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-slate-700 text-sm">Detailed Compatibility Scores</h4>
+                            {departmentCollaboration.compatibilityMatrix
+                              .sort((a, b) => b.score - a.score)
+                              .map((entry, idx) => (
+                                <div
+                                  key={idx}
+                                  className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-semibold text-slate-700">{entry.dept1}</span>
+                                      <span className="text-slate-400">↔</span>
+                                      <span className="font-semibold text-slate-700">{entry.dept2}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className="text-2xl font-bold"
+                                        style={{
+                                          color:
+                                            entry.score >= 80 ? '#10b981' : entry.score >= 60 ? '#f59e0b' : '#ef4444',
+                                        }}
+                                      >
+                                        {entry.score}%
+                                      </div>
+                                      <div
+                                        className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold ${
+                                          entry.score >= 80
+                                            ? 'bg-emerald-500'
+                                            : entry.score >= 60
+                                              ? 'bg-amber-500'
+                                              : 'bg-red-500'
+                                        }`}
+                                      >
+                                        {entry.score >= 80 ? '✓' : entry.score >= 60 ? '~' : '!'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-slate-600 mb-2">{entry.details.reasoning}</p>
+                                  <div className="flex gap-4 text-xs text-slate-500">
+                                    <span>
+                                      Natural: {entry.details.primaryType1} ↔ {entry.details.primaryType2} (
+                                      {entry.details.naturalCompatibility}%)
+                                    </span>
+                                    <span>
+                                      Adaptive: {entry.details.adaptiveCompatibility}% | Diff:{' '}
+                                      {entry.details.scoreDifference}%
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-blue-800 mb-1">Compatibility Analysis Unavailable</p>
-                      <p className="text-sm text-blue-700">
-                        {insights.metadata?.compatibilityReason || 'Need at least 2 departments with results to calculate compatibility'}
-                      </p>
-                      {insights.metadata && (
-                        <div className="mt-2 text-xs text-blue-600">
-                          <p>Current status: {insights.metadata.departmentCount} department(s) with {insights.metadata.totalResults} total result(s)</p>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-700">No compatibility data available.</p>
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                {/* Team Composition Analysis */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
-                  <h3 className="font-semibold text-slate-800 mb-4">Team Composition Analysis</h3>
-                  {loadingInsights ? (
-                    <p className="text-slate-500 py-4">Loading team composition analysis...</p>
-                  ) : insights.teamComposition.length > 0 ? (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {insights.teamComposition.map((comp, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                          <h4 className="font-semibold text-slate-700 mb-3">{comp.department}</h4>
-                          
-                          {comp.strengths.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-xs font-semibold text-emerald-700 mb-1">Strengths:</p>
-                              <ul className="text-sm text-slate-600 space-y-1">
-                                {comp.strengths.map((strength, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className="text-emerald-500">✓</span>
-                                    <span>{strength}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                    {/* Profile Comparisons */}
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                      <h3 className="font-semibold text-slate-800 mb-4">Department Profile Comparisons</h3>
+                      {departmentCollaboration.profileComparisons &&
+                      Array.isArray(departmentCollaboration.profileComparisons) &&
+                      departmentCollaboration.profileComparisons.length > 0 ? (
+                        <div className="space-y-6">
+                          {departmentCollaboration.profileComparisons.map((comp, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm">
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-lg font-semibold text-slate-700">
+                                  {comp.dept1} vs {comp.dept2}
+                                </h4>
+                                <div className="flex gap-2">
+                                  <span
+                                    className="px-3 py-1 rounded text-white text-sm font-bold"
+                                    style={{
+                                      backgroundColor:
+                                        profileDescriptions[comp.comparison.natural.primaryType1 as DISCType].color,
+                                    }}
+                                  >
+                                    {comp.comparison.natural.primaryType1}
+                                  </span>
+                                  <span className="text-slate-400">vs</span>
+                                  <span
+                                    className="px-3 py-1 rounded text-white text-sm font-bold"
+                                    style={{
+                                      backgroundColor:
+                                        profileDescriptions[comp.comparison.natural.primaryType2 as DISCType].color,
+                                    }}
+                                  >
+                                    {comp.comparison.natural.primaryType2}
+                                  </span>
+                                </div>
+                              </div>
 
-                          {comp.gaps.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-xs font-semibold text-amber-700 mb-1">Potential Gaps:</p>
-                              <ul className="text-sm text-slate-600 space-y-1">
-                                {comp.gaps.map((gap, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className="text-amber-500">⚠</span>
-                                    <span>{gap}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                              <p className="text-sm text-slate-600 mb-4">{comp.comparison.summary}</p>
 
-                          {comp.recommendations.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-blue-700 mb-1">Recommendations:</p>
-                              <ul className="text-sm text-slate-600 space-y-1">
-                                {comp.recommendations.map((rec, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className="text-blue-500">💡</span>
-                                    <span>{rec}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                              {/* Natural Profile Comparison Chart */}
+                              <div className="mb-6">
+                                <h5 className="text-sm font-semibold text-emerald-700 mb-3">Natural Profiles</h5>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <BarChart data={[
+                                    {
+                                      type: 'D',
+                                      dept1: comp.comparison.natural.dept1Scores.D,
+                                      dept2: comp.comparison.natural.dept2Scores.D,
+                                    },
+                                    {
+                                      type: 'I',
+                                      dept1: comp.comparison.natural.dept1Scores.I,
+                                      dept2: comp.comparison.natural.dept2Scores.I,
+                                    },
+                                    {
+                                      type: 'S',
+                                      dept1: comp.comparison.natural.dept1Scores.S,
+                                      dept2: comp.comparison.natural.dept2Scores.S,
+                                    },
+                                    {
+                                      type: 'C',
+                                      dept1: comp.comparison.natural.dept1Scores.C,
+                                      dept2: comp.comparison.natural.dept2Scores.C,
+                                    },
+                                  ]}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="type" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="dept1" name={comp.dept1} fill="#10b981" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="dept2" name={comp.dept2} fill="#f97316" radius={[4, 4, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+
+                              {/* Adaptive Profile Comparison Chart */}
+                              <div>
+                                <h5 className="text-sm font-semibold text-orange-700 mb-3">Adaptive Profiles</h5>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <BarChart data={[
+                                    {
+                                      type: 'D',
+                                      dept1: comp.comparison.adaptive.dept1Scores.D,
+                                      dept2: comp.comparison.adaptive.dept2Scores.D,
+                                    },
+                                    {
+                                      type: 'I',
+                                      dept1: comp.comparison.adaptive.dept1Scores.I,
+                                      dept2: comp.comparison.adaptive.dept2Scores.I,
+                                    },
+                                    {
+                                      type: 'S',
+                                      dept1: comp.comparison.adaptive.dept1Scores.S,
+                                      dept2: comp.comparison.adaptive.dept2Scores.S,
+                                    },
+                                    {
+                                      type: 'C',
+                                      dept1: comp.comparison.adaptive.dept1Scores.C,
+                                      dept2: comp.comparison.adaptive.dept2Scores.C,
+                                    },
+                                  ]}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="type" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="dept1" name={comp.dept1} fill="#10b981" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="dept2" name={comp.dept2} fill="#f97316" radius={[4, 4, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-amber-800 mb-1">Team Composition Analysis Unavailable</p>
-                      <p className="text-sm text-amber-700">
-                        No department data available. Complete assessments to see team composition insights.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Communication Style Insights */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
-                  <h3 className="font-semibold text-slate-800 mb-4">Communication Style Insights</h3>
-                  {loadingInsights ? (
-                    <p className="text-slate-500 py-4">Loading communication insights...</p>
-                  ) : insights.communicationInsights.length > 0 ? (
-                    <div className="space-y-4">
-                      {insights.communicationInsights.map((insight, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h4 className="font-semibold text-slate-700">{insight.department}</h4>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                              {insight.style}
-                            </span>
-                          </div>
-
-                          <div className="mb-3">
-                            <p className="text-xs font-semibold text-slate-600 mb-2">Communication Preferences:</p>
-                            <ul className="text-sm text-slate-600 space-y-1">
-                              {insight.preferences.map((pref, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <span className="text-slate-400">•</span>
-                                  <span>{pref}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-semibold text-purple-700 mb-2">Inter-Department Recommendations:</p>
-                            <ul className="text-sm text-slate-600 space-y-1">
-                              {insight.recommendations.map((rec, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <span className="text-purple-500">→</span>
-                                  <span>{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-700">No profile comparison data available.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  ) : (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-amber-800 mb-1">Communication Insights Unavailable</p>
-                      <p className="text-sm text-amber-700">
-                        No department data available. Complete assessments to see communication style insights.
-                      </p>
+
+                    {/* Collaboration Recommendations */}
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                      <h3 className="font-semibold text-slate-800 mb-4">Collaboration Recommendations</h3>
+                      {departmentCollaboration.recommendations &&
+                      Array.isArray(departmentCollaboration.recommendations) &&
+                      departmentCollaboration.recommendations.length > 0 ? (
+                        <div className="space-y-4">
+                          {departmentCollaboration.recommendations.map((rec, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-5 border border-slate-200 shadow-sm">
+                              <div className="flex items-center gap-3 mb-4">
+                                <h4 className="font-semibold text-slate-700">
+                                  {rec.dept1} ↔ {rec.dept2}
+                                </h4>
+                              </div>
+                              <div className="space-y-3">
+                                {rec.recommendations
+                                  .sort((a, b) => {
+                                    const priorityOrder: Record<'high' | 'medium' | 'low', number> = {
+                                      high: 0,
+                                      medium: 1,
+                                      low: 2,
+                                    }
+                                    const aPriority = a.priority as 'high' | 'medium' | 'low'
+                                    const bPriority = b.priority as 'high' | 'medium' | 'low'
+                                    return priorityOrder[aPriority] - priorityOrder[bPriority]
+                                  })
+                                  .map((recommendation, i) => (
+                                    <div
+                                      key={i}
+                                      className={`p-3 rounded-lg border-l-4 ${
+                                        recommendation.priority === 'high'
+                                          ? 'bg-red-50 border-red-500'
+                                          : recommendation.priority === 'medium'
+                                            ? 'bg-amber-50 border-amber-500'
+                                            : 'bg-blue-50 border-blue-500'
+                                      }`}
+                                    >
+                                      <div className="flex items-start gap-2">
+                                        <span
+                                          className={`text-xs font-semibold px-2 py-1 rounded ${
+                                            recommendation.priority === 'high'
+                                              ? 'bg-red-100 text-red-700'
+                                              : recommendation.priority === 'medium'
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-blue-100 text-blue-700'
+                                          }`}
+                                        >
+                                          {recommendation.priority.toUpperCase()}
+                                        </span>
+                                        <span
+                                          className={`text-xs font-medium px-2 py-1 rounded bg-slate-100 text-slate-600`}
+                                        >
+                                          {recommendation.category}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-slate-700 mt-2">{recommendation.text}</p>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-700">No recommendations available.</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </>
             )}
           </div>

@@ -16,10 +16,10 @@ import {
   Radar,
   Legend,
 } from 'recharts'
-import { Download } from 'lucide-react'
+import { Download, Clock, CheckSquare, ArrowRight } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
@@ -31,6 +31,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { generatePDFReport } from '@/lib/pdfGenerator'
+import {
+} from '@/lib/drivingForcesAnalysis'
+import DrivingForcesChart from '@/components/DrivingForcesChart'
 
 // Types
 type DISCType = 'D' | 'I' | 'S' | 'C'
@@ -72,6 +75,14 @@ interface ProfileDescription {
   adaptiveDesc: string
   stressResponse: string
   growth: string
+}
+
+interface CommunicationGuide {
+  styleLabel: string
+  howToCommunicate: string[]
+  howNotToCommunicate: string[]
+  selfPerception: string[]
+  othersPerception: string[]
 }
 
 interface Scores {
@@ -123,6 +134,10 @@ interface DrivingForceDescription {
   traits: string[]
   color: string
   bgColor: string
+  examples?: string[]
+  workplaceScenarios?: string[]
+  strengths?: string[]
+  blindSpots?: string[]
 }
 
 interface MotivatorDescription {
@@ -137,6 +152,7 @@ interface Result {
   name: string
   email?: string
   dept: string
+  teamCode?: string
   natural: Scores
   adaptive: Scores
   primaryNatural: DISCType
@@ -314,6 +330,93 @@ const questions: Question[] = [
   },
 ]
 
+const communicationGuides: Record<DISCType, CommunicationGuide> = {
+  D: {
+    styleLabel: 'Direct, fast-paced, and results-focused communicator',
+    howToCommunicate: [
+      'Get to the point quickly and lead with the bottom line or decision needed.',
+      'Be clear about goals, ownership, and timelines – focus on outcomes more than process.',
+      'Offer options and autonomy rather than prescribing every step.',
+    ],
+    howNotToCommunicate: [
+      'Do not bury key points in long stories or excessive background.',
+      'Avoid indecisive language, mixed messages, or lack of follow-through.',
+      'Do not take direct questions personally or respond with overly emotional reactions.',
+    ],
+    selfPerception: [
+      'You likely see yourself as confident, decisive, and driven to get results.',
+      'You may view your directness as efficient and helpful to the team.',
+    ],
+    othersPerception: [
+      'Others may see you as impatient, demanding, or overly blunt when under pressure.',
+      'Some may hesitate to challenge you or share concerns if they feel rushed or dismissed.',
+    ],
+  },
+  I: {
+    styleLabel: 'Enthusiastic, people-oriented, and expressive communicator',
+    howToCommunicate: [
+      'Start with connection – be warm, positive, and conversational.',
+      'Share the vision, impact, and “why” behind decisions, not just the details.',
+      'Give space for brainstorming, questions, and verbal processing.',
+    ],
+    howNotToCommunicate: [
+      'Do not be overly formal, distant, or purely data-only with no context.',
+      'Avoid shutting down ideas too quickly or focusing only on what is wrong.',
+      'Do not ignore their need for interaction by relying only on one-way communication.',
+    ],
+    selfPerception: [
+      'You likely see yourself as friendly, encouraging, and good with people.',
+      'You may view your optimism and energy as a key contribution to the team.',
+    ],
+    othersPerception: [
+      'Others may see you as scattered, overly talkative, or lacking follow-through at times.',
+      'Some may feel you overpromise or move on too quickly from details and commitments.',
+    ],
+  },
+  S: {
+    styleLabel: 'Calm, steady, and supportive communicator',
+    howToCommunicate: [
+      'Provide a safe, respectful space and avoid putting them on the spot unexpectedly.',
+      'Be clear, patient, and consistent – allow time to process and ask questions.',
+      'Explain how changes will affect people, stability, and day-to-day routines.',
+    ],
+    howNotToCommunicate: [
+      'Do not surprise them with last-minute changes or abrupt confrontations.',
+      'Avoid aggressive, high-pressure tactics or rapid-fire decisions with no input.',
+      'Do not dismiss their concerns about impact on people or team harmony.',
+    ],
+    selfPerception: [
+      'You likely see yourself as loyal, dependable, and a good listener.',
+      'You may view your calm presence as a stabilizing force for the team.',
+    ],
+    othersPerception: [
+      'Others may see you as resistant to change, quiet, or slow to decide.',
+      'Some may underestimate your opinions because you do not always speak first.',
+    ],
+  },
+  C: {
+    styleLabel: 'Thoughtful, precise, and data-driven communicator',
+    howToCommunicate: [
+      'Come prepared with facts, structure, and clear reasoning behind your message.',
+      'Give time to analyze information and ask detailed questions.',
+      'Be specific about expectations, quality standards, and processes.',
+    ],
+    howNotToCommunicate: [
+      'Do not be vague, inconsistent, or dismissive of details and risks.',
+      'Avoid pressuring for instant decisions without sufficient information.',
+      'Do not take critical questions as personal attacks – they are seeking clarity.',
+    ],
+    selfPerception: [
+      'You likely see yourself as careful, thorough, and committed to doing things right.',
+      'You may view your questions and critique as protecting quality and reducing risk.',
+    ],
+    othersPerception: [
+      'Others may see you as overly critical, slow, or rigid when standards feel too high.',
+      'Some may feel intimidated by your focus on accuracy or fear “being wrong” around you.',
+    ],
+  },
+}
+
 // Driving Forces Questions
 const drivingForceQuestions: DrivingForceQuestion[] = [
   {
@@ -417,6 +520,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Experience-based', 'Intuitive', 'Practical', 'Action-oriented'],
     color: '#7c3aed',
     bgColor: '#f3e8ff',
+    examples: [
+      'Trusting your gut feeling when making decisions',
+      'Drawing on similar past experiences to solve current problems',
+      'Learning through hands-on practice rather than theory',
+      'Making quick decisions based on accumulated wisdom',
+    ],
+    workplaceScenarios: [
+      'Leading a project similar to one you\'ve done before',
+      'Mentoring others based on your experience',
+      'Making rapid decisions in familiar situations',
+      'Troubleshooting issues using past knowledge',
+    ],
+    strengths: [
+      'Quick decision-making in familiar contexts',
+      'Practical problem-solving based on real experience',
+      'Reliable judgment in areas of expertise',
+      'Ability to act decisively without over-analysis',
+    ],
+    blindSpots: [
+      'May miss new approaches or innovative solutions',
+      'Could overlook important details if situation differs from past',
+      'May resist learning new methods if old ones worked',
+      'Risk of applying outdated solutions to new problems',
+    ],
   },
   KN: {
     name: 'Intellectual',
@@ -425,6 +552,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Curious', 'Analytical', 'Learning-focused', 'Truth-seeking'],
     color: '#6366f1',
     bgColor: '#eef2ff',
+    examples: [
+      'Reading extensively about topics that interest you',
+      'Asking probing questions to understand deeply',
+      'Seeking out training and educational opportunities',
+      'Enjoying research and discovery processes',
+    ],
+    workplaceScenarios: [
+      'Taking on projects that require learning new skills',
+      'Conducting research and analysis',
+      'Participating in training and development programs',
+      'Exploring innovative solutions through study',
+    ],
+    strengths: [
+      'Deep understanding of complex topics',
+      'Ability to synthesize information from multiple sources',
+      'Strong analytical and critical thinking skills',
+      'Natural curiosity drives continuous improvement',
+    ],
+    blindSpots: [
+      'May over-analyze and delay action',
+      'Could prioritize learning over practical application',
+      'May struggle with decisions when information is incomplete',
+      'Risk of analysis paralysis',
+    ],
   },
   US: {
     name: 'Selfless',
@@ -433,6 +584,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Altruistic', 'Service-oriented', 'Generous', 'Self-sacrificing'],
     color: '#059669',
     bgColor: '#d1fae5',
+    examples: [
+      'Helping colleagues without expecting anything in return',
+      'Volunteering for tasks that benefit the team',
+      'Putting others\' needs before your own',
+      'Finding satisfaction in contributing to a greater good',
+    ],
+    workplaceScenarios: [
+      'Supporting team members who are struggling',
+      'Taking on less desirable tasks for the team\'s benefit',
+      'Mentoring and developing others',
+      'Contributing to projects where you won\'t receive direct credit',
+    ],
+    strengths: [
+      'Builds strong relationships and trust',
+      'Creates positive team culture',
+      'Natural mentor and supporter',
+      'High level of commitment to collective success',
+    ],
+    blindSpots: [
+      'May neglect your own needs and career development',
+      'Could be taken advantage of by others',
+      'May struggle to advocate for yourself',
+      'Risk of burnout from over-giving',
+    ],
   },
   UR: {
     name: 'Resourceful',
@@ -441,6 +616,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Efficient', 'Results-driven', 'Pragmatic', 'ROI-focused'],
     color: '#0891b2',
     bgColor: '#cffafe',
+    examples: [
+      'Finding ways to accomplish more with less',
+      'Evaluating the return on investment before committing',
+      'Streamlining processes to increase efficiency',
+      'Focusing on outcomes that provide measurable value',
+    ],
+    workplaceScenarios: [
+      'Optimizing workflows and processes',
+      'Leading projects with clear ROI expectations',
+      'Making resource allocation decisions',
+      'Identifying and eliminating waste or inefficiency',
+    ],
+    strengths: [
+      'Excellent at maximizing resources and efficiency',
+      'Strong focus on practical outcomes',
+      'Ability to identify and eliminate waste',
+      'Results-oriented approach drives productivity',
+    ],
+    blindSpots: [
+      'May overlook human or relationship aspects',
+      'Could prioritize efficiency over quality',
+      'May struggle with tasks that don\'t have clear ROI',
+      'Risk of being perceived as transactional',
+    ],
   },
   SO: {
     name: 'Objective',
@@ -449,6 +648,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Functional', 'Practical', 'Systematic', 'Organized'],
     color: '#dc2626',
     bgColor: '#fee2e2',
+    examples: [
+      'Preferring organized, clutter-free workspaces',
+      'Valuing functionality over aesthetics',
+      'Creating systems and structures for efficiency',
+      'Focusing on what works rather than how it looks',
+    ],
+    workplaceScenarios: [
+      'Designing efficient office layouts',
+      'Organizing information and processes systematically',
+      'Creating functional workspaces',
+      'Implementing structured workflows',
+    ],
+    strengths: [
+      'Creates organized and efficient environments',
+      'Strong focus on functionality and practicality',
+      'Excellent at systems thinking',
+      'Reliable and consistent approach',
+    ],
+    blindSpots: [
+      'May overlook the importance of aesthetics and atmosphere',
+      'Could create environments that feel sterile or impersonal',
+      'May not consider emotional or subjective needs',
+      'Risk of being too rigid or inflexible',
+    ],
   },
   SH: {
     name: 'Harmonious',
@@ -457,6 +680,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Aesthetic', 'Balanced', 'Sensory-aware', 'Atmosphere-focused'],
     color: '#ea580c',
     bgColor: '#ffedd5',
+    examples: [
+      'Creating visually appealing and comfortable spaces',
+      'Paying attention to lighting, colors, and ambiance',
+      'Valuing balance and harmony in your environment',
+      'Being sensitive to the mood and energy of spaces',
+    ],
+    workplaceScenarios: [
+      'Designing welcoming and pleasant workspaces',
+      'Creating positive team atmospheres',
+      'Organizing events with attention to ambiance',
+      'Contributing to workplace culture and environment',
+    ],
+    strengths: [
+      'Creates pleasant and inspiring environments',
+      'Sensitive to atmosphere and mood',
+      'Strong aesthetic sense',
+      'Contributes to positive workplace culture',
+    ],
+    blindSpots: [
+      'May prioritize aesthetics over functionality',
+      'Could spend too much time on environment vs. work',
+      'May struggle in purely functional or sterile environments',
+      'Risk of being perceived as superficial',
+    ],
   },
   OI: {
     name: 'Intentional',
@@ -465,6 +712,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Purpose-driven', 'Goal-oriented', 'Strategic', 'Outcome-focused'],
     color: '#be185d',
     bgColor: '#fce7f3',
+    examples: [
+      'Helping others achieve specific goals or outcomes',
+      'Providing support that aligns with strategic objectives',
+      'Mentoring with clear purpose and direction',
+      'Assisting when it serves a larger purpose',
+    ],
+    workplaceScenarios: [
+      'Mentoring others toward specific career goals',
+      'Supporting team members to achieve project objectives',
+      'Providing strategic guidance and direction',
+      'Helping others develop skills needed for success',
+    ],
+    strengths: [
+      'Strategic approach to helping others',
+      'Clear focus on outcomes and results',
+      'Effective at goal-oriented support',
+      'Balances helping with achieving objectives',
+    ],
+    blindSpots: [
+      'May be perceived as transactional or conditional',
+      'Could miss opportunities to help without clear purpose',
+      'May struggle with purely emotional support',
+      'Risk of being seen as less genuine',
+    ],
   },
   OA: {
     name: 'Altruistic',
@@ -473,6 +744,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Caring', 'Empathetic', 'Supportive', 'People-focused'],
     color: '#c2410c',
     bgColor: '#fff7ed',
+    examples: [
+      'Genuinely caring about others\' wellbeing',
+      'Feeling fulfilled when you help others succeed',
+      'Naturally empathetic and understanding',
+      'Putting people\'s needs and feelings first',
+    ],
+    workplaceScenarios: [
+      'Supporting colleagues through difficult times',
+      'Creating inclusive and supportive team environments',
+      'Advocating for others\' needs and interests',
+      'Building strong relationships based on care',
+    ],
+    strengths: [
+      'Builds deep, meaningful relationships',
+      'Creates supportive and caring environments',
+      'High emotional intelligence',
+      'Natural ability to understand and help others',
+    ],
+    blindSpots: [
+      'May struggle with difficult decisions that affect people',
+      'Could have difficulty saying no or setting boundaries',
+      'May prioritize relationships over results',
+      'Risk of emotional exhaustion from caring too much',
+    ],
   },
   PC: {
     name: 'Collaborative',
@@ -481,6 +776,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Team-oriented', 'Supportive', 'Humble', 'Cooperative'],
     color: '#16a34a',
     bgColor: '#dcfce7',
+    examples: [
+      'Thriving in team environments where everyone contributes',
+      'Finding satisfaction in collective success',
+      'Supporting leaders and helping them succeed',
+      'Preferring shared recognition over individual accolades',
+    ],
+    workplaceScenarios: [
+      'Working effectively in collaborative teams',
+      'Supporting team leaders and contributing to group goals',
+      'Facilitating team success through cooperation',
+      'Contributing to projects without needing personal credit',
+    ],
+    strengths: [
+      'Excellent team player and collaborator',
+      'Builds strong team cohesion',
+      'Reliable and supportive team member',
+      'Creates positive team dynamics',
+    ],
+    blindSpots: [
+      'May struggle to take individual leadership roles',
+      'Could be overlooked for promotions or recognition',
+      'May avoid advocating for yourself',
+      'Risk of being taken for granted',
+    ],
   },
   PD: {
     name: 'Commanding',
@@ -489,6 +808,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Ambitious', 'Leadership-focused', 'Status-driven', 'Autonomous'],
     color: '#ca8a04',
     bgColor: '#fef9c3',
+    examples: [
+      'Seeking leadership roles and positions of influence',
+      'Valuing recognition and status symbols',
+      'Wanting control over your work and decisions',
+      'Striving for advancement and career growth',
+    ],
+    workplaceScenarios: [
+      'Leading projects and teams',
+      'Pursuing promotions and career advancement',
+      'Taking on high-visibility assignments',
+      'Building your professional reputation and status',
+    ],
+    strengths: [
+      'Natural leadership ability',
+      'Strong drive for achievement and success',
+      'Comfortable making decisions and taking charge',
+      'Ambitious and goal-oriented',
+    ],
+    blindSpots: [
+      'May struggle with collaborative or supporting roles',
+      'Could be perceived as overly competitive or self-focused',
+      'May have difficulty sharing credit or recognition',
+      'Risk of prioritizing status over team success',
+    ],
   },
   MR: {
     name: 'Receptive',
@@ -497,6 +840,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Innovative', 'Flexible', 'Open-minded', 'Change-embracing'],
     color: '#0284c7',
     bgColor: '#e0f2fe',
+    examples: [
+      'Embracing new technologies and approaches',
+      'Seeking out innovative solutions and methods',
+      'Adapting quickly to change',
+      'Exploring unconventional ideas and approaches',
+    ],
+    workplaceScenarios: [
+      'Leading innovation and change initiatives',
+      'Exploring new technologies and processes',
+      'Adapting to changing business needs',
+      'Championing new ideas and approaches',
+    ],
+    strengths: [
+      'Drives innovation and change',
+      'Adaptable and flexible approach',
+      'Open to new ideas and possibilities',
+      'Comfortable with uncertainty and ambiguity',
+    ],
+    blindSpots: [
+      'May struggle with established processes and systems',
+      'Could create instability with constant change',
+      'May overlook the value of proven methods',
+      'Risk of being perceived as unreliable or inconsistent',
+    ],
   },
   MS: {
     name: 'Structured',
@@ -505,6 +872,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Systematic', 'Traditional', 'Consistent', 'Process-oriented'],
     color: '#1e40af',
     bgColor: '#dbeafe',
+    examples: [
+      'Following established processes and procedures',
+      'Valuing consistency and reliability',
+      'Preferring proven methods over experimentation',
+      'Creating and maintaining systems and structures',
+    ],
+    workplaceScenarios: [
+      'Maintaining and improving existing processes',
+      'Ensuring consistency and quality standards',
+      'Implementing structured workflows',
+      'Providing stability and reliability',
+    ],
+    strengths: [
+      'Provides stability and consistency',
+      'Reliable and predictable approach',
+      'Strong at maintaining quality standards',
+      'Excellent at process improvement',
+    ],
+    blindSpots: [
+      'May resist necessary change and innovation',
+      'Could be perceived as rigid or inflexible',
+      'May struggle with ambiguity or uncertainty',
+      'Risk of being left behind by innovation',
+    ],
   },
 }
 
@@ -619,6 +1010,7 @@ export default function DISCAssessment() {
   const [employeeName, setEmployeeName] = useState('')
   const [employeeEmail, setEmployeeEmail] = useState('')
   const [employeeDept, setEmployeeDept] = useState('')
+  const [employeeTeamCode, setEmployeeTeamCode] = useState('')
   const [selectionPhase, setSelectionPhase] = useState<'most' | 'least'>('most')
   const [currentMostSelection, setCurrentMostSelection] = useState<DISCType | null>(null)
   const [scores, setScores] = useState<CalculatedScores | null>(null)
@@ -753,6 +1145,7 @@ export default function DISCAssessment() {
         name: employeeName,
         email: employeeEmail,
         dept: employeeDept,
+        teamCode: employeeTeamCode || undefined,
         ...scores,
         drivingForces: drivingForceResult,
         date: new Date().toISOString().split('T')[0],
@@ -772,6 +1165,7 @@ export default function DISCAssessment() {
             name: employeeName,
             email: employeeEmail,
             dept: employeeDept,
+            teamCode: employeeTeamCode,
             natural: scores.natural,
             adaptive: scores.adaptive,
             primaryNatural: scores.primaryNatural,
@@ -808,7 +1202,21 @@ export default function DISCAssessment() {
     if (currentView === 'admin') {
       setLoadingResults(true)
       fetch('/api/results')
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) {
+            let errorMessage = `Failed to fetch results: ${res.status} ${res.statusText}`
+            try {
+              const errorData = await res.json()
+              if (errorData && (errorData.error || errorData.details)) {
+                errorMessage = errorData.error || errorData.details
+              }
+            } catch {
+              // Ignore JSON parse errors and fall back to generic message
+            }
+            throw new Error(errorMessage)
+          }
+          return res.json()
+        })
         .then((data) => {
           setAllResults(data)
           setLoadingResults(false)
@@ -820,7 +1228,21 @@ export default function DISCAssessment() {
 
       setLoadingInsights(true)
       fetch('/api/insights')
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) {
+            let errorMessage = `Failed to fetch insights: ${res.status} ${res.statusText}`
+            try {
+              const errorData = await res.json()
+              if (errorData && (errorData.error || errorData.details)) {
+                errorMessage = errorData.error || errorData.details
+              }
+            } catch {
+              // Ignore JSON parse errors and fall back to generic message
+            }
+            throw new Error(errorMessage)
+          }
+          return res.json()
+        })
         .then((data) => {
           setInsights(data)
           setLoadingInsights(false)
@@ -839,6 +1261,7 @@ export default function DISCAssessment() {
     setEmployeeName('')
     setEmployeeEmail('')
     setEmployeeDept('')
+    setEmployeeTeamCode('')
     setSelectionPhase('most')
     setCurrentMostSelection(null)
     setCurrentView('intro')
@@ -861,7 +1284,9 @@ export default function DISCAssessment() {
         name: employeeName,
         email: employeeEmail,
         dept: employeeDept,
+        teamCode: employeeTeamCode || undefined,
         ...scores,
+         drivingForces: drivingForceScores || undefined,
         date: new Date().toISOString().split('T')[0],
       }
 
@@ -911,158 +1336,115 @@ export default function DISCAssessment() {
 
   // Intro Screen
   if (currentView === 'intro') {
-    const formValid = Boolean(employeeName && employeeEmail && employeeDept)
+    const formValid = Boolean(employeeName && employeeEmail && employeeDept && employeeTeamCode)
 
     return (
-      <div className="min-h-screen bg-muted/20 py-10">
-        <div className="container max-w-5xl space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <p className="text-sm uppercase tracking-wide text-muted-foreground">Assessment</p>
-              <h1 className="text-3xl font-semibold">DISC Natural & Adaptive styles</h1>
-              <p className="text-muted-foreground">Discover how you show up day-to-day and under pressure.</p>
-            </div>
-            <div className="flex gap-2">
-              {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
-                <div
-                  key={type}
-                  className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold shadow"
-                  style={{
-                    backgroundColor: profileDescriptions[type].bgColor,
-                    color: profileDescriptions[type].color,
-                  }}
-                >
-                  {type}
-                </div>
-              ))}
-            </div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-stone-100 px-4 py-12 flex items-start sm:items-center justify-center">
+        <div className="w-full max-w-2xl space-y-8">
+          <div className="space-y-3 text-center">
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+              DISC + Driving Forces
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+              Discover your natural behaviors and what motivates you.
+            </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.3fr,1fr]">
-            <Card className="border-border/80">
-              <CardHeader>
-                <CardTitle>Tell us about you</CardTitle>
-                <CardDescription>We will use this to personalize your results.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="employeeName">Your Name</Label>
-                    <Input
-                      id="employeeName"
-                      value={employeeName}
-                      onChange={(e) => setEmployeeName(e.target.value)}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="employeeEmail">Email Address</Label>
-                    <Input
-                      id="employeeEmail"
-                      type="email"
-                      value={employeeEmail}
-                      onChange={(e) => setEmployeeEmail(e.target.value)}
-                      placeholder="name@company.com"
-                    />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label>Department</Label>
-                    <Select value={employeeDept || undefined} onValueChange={setEmployeeDept}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['Engineering', 'Marketing', 'Sales', 'Operations', 'Finance', 'HR', 'Executive', 'Other'].map(
-                          (dept) => (
-                            <SelectItem key={dept} value={dept}>
-                              {dept}
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
+          <Card className="border border-slate-100 bg-white/95 shadow-xl shadow-slate-900/5 rounded-3xl">
+            <CardContent className="space-y-6 pt-6 sm:pt-8">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="employeeName" className="text-sm font-medium text-slate-800">
+                    Your name
+                  </Label>
+                  <Input
+                    id="employeeName"
+                    value={employeeName}
+                    onChange={(e) => setEmployeeName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400"
+                  />
                 </div>
-
-                <div className="grid gap-3 rounded-lg border bg-muted/40 p-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-sm font-medium text-emerald-700">Natural style</p>
-                    <p className="text-sm text-muted-foreground">
-                      How you behave when relaxed and in your comfort zone.
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-amber-700">Adaptive style</p>
-                    <p className="text-sm text-muted-foreground">
-                      How you flex under stress, pressure, or challenging situations.
-                    </p>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employeeEmail" className="text-sm font-medium text-slate-800">
+                    Email
+                  </Label>
+                  <Input
+                    id="employeeEmail"
+                    type="email"
+                    value={employeeEmail}
+                    onChange={(e) => setEmployeeEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400"
+                  />
                 </div>
-
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold text-foreground">How it works</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    <li>• {questions.length} DISC questions, each with 4 options.</li>
-                    <li>• Choose the statement MOST like you, then LEAST like you.</li>
-                    <li>• Then complete {drivingForceQuestions.length} Driving Forces questions.</li>
-                    <li>• Answer based on your natural tendencies (10-15 minutes total).</li>
-                  </ul>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label className="text-sm font-medium text-slate-800">Department</Label>
+                  <Select value={employeeDept || undefined} onValueChange={setEmployeeDept}>
+                    <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['Engineering', 'Marketing', 'Sales', 'Operations', 'Finance', 'HR', 'Executive', 'Other'].map(
+                        (dept) => (
+                          <SelectItem key={dept} value={dept}>
+                            {dept}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    className="flex-1 sm:flex-none"
-                    onClick={() => {
-                      const randomized = questions.map((q) => ({
-                        ...q,
-                        options: [...q.options].sort(() => Math.random() - 0.5),
-                      }))
-                      setShuffledQuestions(randomized)
-                      setCurrentQuestion(0)
-                      setSelectionPhase('most')
-                      setCurrentMostSelection(null)
-                      setCurrentView('assessment')
-                    }}
-                    disabled={!formValid}
-                  >
-                    Start assessment
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 sm:flex-none"
-                    onClick={() => setCurrentView('admin')}
-                  >
-                    View Admin Dashboard
-                  </Button>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="teamCode" className="text-sm font-medium text-slate-800">
+                    Team code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="teamCode"
+                    type="text"
+                    value={employeeTeamCode}
+                    onChange={(e) => setEmployeeTeamCode(e.target.value.toUpperCase())}
+                    placeholder="DTG01"
+                    maxLength={20}
+                    required
+                    className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400"
+                  />
+                  <p className="text-xs text-slate-500">Use the code provided by your admin.</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="border-border/80">
-              <CardHeader>
-                <CardTitle>What we measure</CardTitle>
-                <CardDescription>Quick view of the four DISC styles.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
-                  <div key={type} className="flex items-start gap-3 rounded-lg border p-3">
-                    <div
-                      className="flex h-10 w-10 items-center justify-center rounded-md text-sm font-semibold"
-                      style={{
-                        backgroundColor: profileDescriptions[type].bgColor,
-                        color: profileDescriptions[type].color,
-                      }}
-                    >
-                      {type}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{profileDescriptions[type].name}</p>
-                      <p className="text-sm text-muted-foreground">{profileDescriptions[type].traits.join(' • ')}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+              <div className="pt-2">
+                <Button
+                  className="inline-flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-slate-900 text-white text-sm font-medium shadow-[0_18px_40px_rgba(15,23,42,0.35)] hover:bg-slate-900/90"
+                  onClick={() => {
+                    const randomized = questions.map((q) => ({
+                      ...q,
+                      options: [...q.options].sort(() => Math.random() - 0.5),
+                    }))
+                    setShuffledQuestions(randomized)
+                    setCurrentQuestion(0)
+                    setSelectionPhase('most')
+                    setCurrentMostSelection(null)
+                    setCurrentView('assessment')
+                  }}
+                  disabled={!formValid}
+                >
+                  <span>Start assessment</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-center gap-6 text-xs text-slate-500">
+            <div className="inline-flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>10–15 min</span>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <CheckSquare className="h-4 w-4" />
+              <span>{questions.length + drivingForceQuestions.length} questions</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1266,45 +1648,7 @@ export default function DISCAssessment() {
     const adaptiveProfile = profileDescriptions[scores.primaryAdaptive]
     const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
     const hasDrivingForces = drivingForceScores !== null
-
-    // Driving Forces chart data
-    const drivingForcesData = hasDrivingForces
-      ? (['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-          (motivator) => {
-            const primary = drivingForceScores!.primaryForces[motivator]
-            const opposite =
-              motivator === 'Knowledge'
-                ? primary === 'KI'
-                  ? 'KN'
-                  : 'KI'
-                : motivator === 'Utility'
-                  ? primary === 'US'
-                    ? 'UR'
-                    : 'US'
-                  : motivator === 'Surroundings'
-                    ? primary === 'SO'
-                      ? 'SH'
-                      : 'SO'
-                    : motivator === 'Others'
-                      ? primary === 'OI'
-                        ? 'OA'
-                        : 'OI'
-                      : motivator === 'Power'
-                        ? primary === 'PC'
-                          ? 'PD'
-                          : 'PC'
-                        : primary === 'MR'
-                          ? 'MS'
-                          : 'MR'
-            return {
-              motivator,
-              primary: drivingForceScores!.scores[primary],
-              opposite: drivingForceScores!.scores[opposite],
-              primaryType: primary,
-            }
-          }
-        )
-      : []
+    const communicationGuide = communicationGuides[scores.primaryNatural]
 
     return (
       <div className="min-h-screen bg-muted/20 py-10">
@@ -1328,13 +1672,6 @@ export default function DISCAssessment() {
                 <div className="mt-4">
                   <span className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     ✓ Results saved successfully!
-                  </span>
-                </div>
-              )}
-              {saveStatus === 'error' && saveError && (
-                <div className="mt-4">
-                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
-                    ⚠ {saveError}
                   </span>
                 </div>
               )}
@@ -1523,177 +1860,86 @@ export default function DISCAssessment() {
               </div>
             </div>
 
-            {/* Driving Forces Section */}
-            {hasDrivingForces && (
-              <>
-                <div className="border-t-2 border-slate-200 pt-8 mb-8">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Your Driving Forces</h2>
-                    <p className="text-slate-600">What motivates you and drives your decisions</p>
-                  </div>
+            {/* Communication Guidance */}
+            <div className="border-t-2 border-slate-200 pt-8 mb-8">
+              <div className="mb-4">
+                <h2 className="text-2xl font-bold text-slate-800 mb-1">How to Communicate With You</h2>
+                <p className="text-slate-600 text-sm">
+                  Based primarily on your Natural style ({scores.primaryNatural} – {naturalProfile.name}).
+                </p>
+              </div>
 
-                  {/* Primary Driving Forces Overview */}
-                  <div className="grid md:grid-cols-3 gap-4 mb-8">
-                    {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                      (motivator) => {
-                        const primary = drivingForceScores!.primaryForces[motivator]
-                        const desc = drivingForceDescriptions[primary]
-                        return (
-                          <div
-                            key={motivator}
-                            className="rounded-xl p-4 border-2"
-                            style={{
-                              borderColor: desc.color,
-                              backgroundColor: desc.bgColor,
-                            }}
-                          >
-                            <div className="text-sm font-semibold text-slate-600 mb-1">{motivator}</div>
-                            <div className="text-lg font-bold mb-1" style={{ color: desc.color }}>
-                              {desc.name}
-                            </div>
-                            <p className="text-xs text-slate-600">{desc.description}</p>
-                          </div>
-                        )
-                      }
-                    )}
-                  </div>
-
-                  {/* Driving Forces Chart */}
-                  <div className="bg-slate-50 rounded-xl p-5 mb-8">
-                    <h3 className="font-semibold text-slate-800 mb-4 text-center">Driving Forces by Motivator</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={drivingForcesData} barGap={2}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="motivator" angle={-45} textAnchor="end" height={100} />
-                        <YAxis domain={[0, 15]} />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="primary" name="Primary" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="opposite" name="Opposite" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Detailed Driving Forces Scores */}
-                  <div className="bg-slate-50 rounded-xl p-5 mb-8">
-                    <h3 className="font-semibold text-slate-800 mb-4">All Driving Forces Scores</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                        (motivator) => {
-                          const primary = drivingForceScores!.primaryForces[motivator]
-                          const opposite =
-                            motivator === 'Knowledge'
-                              ? primary === 'KI'
-                                ? 'KN'
-                                : 'KI'
-                              : motivator === 'Utility'
-                                ? primary === 'US'
-                                  ? 'UR'
-                                  : 'US'
-                                : motivator === 'Surroundings'
-                                  ? primary === 'SO'
-                                    ? 'SH'
-                                    : 'SO'
-                                  : motivator === 'Others'
-                                    ? primary === 'OI'
-                                      ? 'OA'
-                                      : 'OI'
-                                    : motivator === 'Power'
-                                      ? primary === 'PC'
-                                        ? 'PD'
-                                        : 'PC'
-                                      : primary === 'MR'
-                                        ? 'MS'
-                                        : 'MR'
-                          const primaryDesc = drivingForceDescriptions[primary]
-                          const oppositeDesc = drivingForceDescriptions[opposite]
-                          return (
-                            <div key={motivator} className="bg-white rounded-lg p-4 border">
-                              <h4 className="font-semibold text-slate-700 mb-3">{motivator}</h4>
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className="w-24 text-xs font-medium"
-                                    style={{ color: primaryDesc.color }}
-                                  >
-                                    {primaryDesc.name}
-                                  </div>
-                                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${(drivingForceScores!.scores[primary] / 15) * 100}%`,
-                                        backgroundColor: primaryDesc.color,
-                                      }}
-                                    />
-                                  </div>
-                                  <div className="w-8 text-right text-xs font-semibold">
-                                    {drivingForceScores!.scores[primary]}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className="w-24 text-xs font-medium text-slate-500"
-                                    style={{ color: oppositeDesc.color }}
-                                  >
-                                    {oppositeDesc.name}
-                                  </div>
-                                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${(drivingForceScores!.scores[opposite] / 15) * 100}%`,
-                                        backgroundColor: oppositeDesc.color,
-                                      }}
-                                    />
-                                  </div>
-                                  <div className="w-8 text-right text-xs font-semibold text-slate-500">
-                                    {drivingForceScores!.scores[opposite]}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        }
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Driving Forces Insights */}
-                  <div className="space-y-4 mb-8">
-                    <div className="bg-purple-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-purple-800 mb-2">💡 Your Primary Motivators</h3>
-                      <div className="grid md:grid-cols-2 gap-3 mt-3">
-                        {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                          (motivator) => {
-                            const primary = drivingForceScores!.primaryForces[motivator]
-                            const desc = drivingForceDescriptions[primary]
-                            return (
-                              <div key={motivator} className="bg-white rounded p-3">
-                                <div className="font-semibold text-sm mb-1" style={{ color: desc.color }}>
-                                  {motivator}: {desc.name}
-                                </div>
-                                <p className="text-xs text-slate-600">{desc.description}</p>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {desc.traits.map((trait) => (
-                                    <span
-                                      key={trait}
-                                      className="px-2 py-0.5 bg-slate-100 rounded text-xs"
-                                      style={{ color: desc.color }}
-                                    >
-                                      {trait}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )
-                          }
-                        )}
-                      </div>
-                    </div>
-                  </div>
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <h3 className="font-semibold text-slate-800 mb-2">Do this when communicating with you</h3>
+                  <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                    {communicationGuide.howToCommunicate.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-emerald-500">✓</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </>
+
+                <div className="bg-rose-50 rounded-xl p-4 border border-rose-100">
+                  <h3 className="font-semibold text-rose-800 mb-2">Avoid this when communicating with you</h3>
+                  <ul className="mt-2 space-y-2 text-sm text-rose-800">
+                    {communicationGuide.howNotToCommunicate.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-rose-500">✕</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl p-4 border border-slate-200">
+                  <h3 className="font-semibold text-slate-800 mb-2">How you likely see yourself</h3>
+                  <ul className="mt-1 space-y-2 text-sm text-slate-700">
+                    {communicationGuide.selfPerception.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-slate-400">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-slate-200">
+                  <h3 className="font-semibold text-slate-800 mb-2">How others may see you</h3>
+                  <ul className="mt-1 space-y-2 text-sm text-slate-700">
+                    {communicationGuide.othersPerception.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-slate-400">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Driving Forces Section */}
+            {hasDrivingForces && drivingForceScores && (
+              <div className="border-t-2 border-slate-200 pt-8 mb-8">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Your Driving Forces</h2>
+                  <p className="text-slate-600 text-sm max-w-2xl mx-auto">
+                    These six scales show how strongly you lean toward each side of the core motivators that drive your
+                    decisions and priorities.
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-6">
+                  <DrivingForcesChart
+                    scores={drivingForceScores.scores}
+                    title="Driving Forces Profile"
+                    subtitle="Higher numbers indicate a stronger pull toward that side of each motivator."
+                  />
+                </div>
+              </div>
             )}
 
             <div className="space-y-3">

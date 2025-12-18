@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
       name,
       email,
       dept,
+      teamCode,
       natural,
       adaptive,
       primaryNatural,
@@ -26,20 +27,22 @@ export async function POST(request: NextRequest) {
     // Insert result into database
     const stmt = dbInstance.prepare(`
       INSERT INTO results (
-        name, email, department,
+        name, email, department, team_code,
         natural_D, natural_I, natural_S, natural_C,
         adaptive_D, adaptive_I, adaptive_S, adaptive_C,
         primary_natural, primary_adaptive, driving_forces
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
 
     // Normalize department name (trim whitespace)
     const normalizedDept = dept.trim()
+    const normalizedTeamCode = teamCode ? teamCode.trim().toUpperCase() : null
 
     const result = stmt.run(
       name,
       email || null,
       normalizedDept,
+      normalizedTeamCode,
       natural.D,
       natural.I,
       natural.S,
@@ -71,6 +74,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const department = searchParams.get('department')
+    const teamCode = searchParams.get('teamCode')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
@@ -81,6 +85,11 @@ export async function GET(request: NextRequest) {
     if (department) {
       conditions.push('department = ?')
       params.push(department.trim())
+    }
+
+    if (teamCode) {
+      conditions.push('team_code = ?')
+      params.push(teamCode.trim().toUpperCase())
     }
 
     if (startDate) {
@@ -110,6 +119,7 @@ export async function GET(request: NextRequest) {
           name: row.name,
           email: row.email,
           dept: row.department,
+          teamCode: row.team_code,
           natural: {
             D: row.natural_D,
             I: row.natural_I,
@@ -135,6 +145,7 @@ export async function GET(request: NextRequest) {
           name: row.name || 'Unknown',
           email: row.email,
           dept: row.department || 'Unknown',
+          teamCode: row.team_code || null,
           natural: {
             D: row.natural_D || 0,
             I: row.natural_I || 0,

@@ -4,6 +4,7 @@ import {
   analyzeTeamComposition,
   getCommunicationInsights,
   getDepartmentData,
+  getDepartmentCollaborationAnalysis,
 } from '@/lib/insights'
 
 export async function GET() {
@@ -13,6 +14,12 @@ export async function GET() {
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
     teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
     communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+    departmentCollaboration?: {
+      compatibilityMatrix: Array<{ dept1: string; dept2: string; score: number; details: any }>
+      profileComparisons: Array<{ dept1: string; dept2: string; comparison: any }>
+      recommendations: Array<{ dept1: string; dept2: string; recommendations: any[] }>
+      metadata: { departmentCount: number; totalPairs: number; available: boolean }
+    }
     metadata?: {
       departmentCount: number
       totalResults: number
@@ -66,6 +73,31 @@ export async function GET() {
       result.communicationInsights = []
     }
 
+    // Calculate comprehensive department collaboration analysis
+    try {
+      console.log('[API] Calculating department collaboration analysis...')
+      const collaborationAnalysis = getDepartmentCollaborationAnalysis()
+      result.departmentCollaboration = collaborationAnalysis
+      console.log('[API] Department collaboration analysis complete:', {
+        matrixEntries: collaborationAnalysis.compatibilityMatrix.length,
+        comparisons: collaborationAnalysis.profileComparisons.length,
+        recommendations: collaborationAnalysis.recommendations.length,
+        available: collaborationAnalysis.metadata.available,
+      })
+    } catch (collabError) {
+      console.error('[API] Error calculating department collaboration analysis:', collabError)
+      result.departmentCollaboration = {
+        compatibilityMatrix: [],
+        profileComparisons: [],
+        recommendations: [],
+        metadata: {
+          departmentCount: 0,
+          totalPairs: 0,
+          available: false,
+        },
+      }
+    }
+
     // Add metadata about why compatibility might not be available
     result.metadata = {
       departmentCount,
@@ -84,6 +116,7 @@ export async function GET() {
       compatibilityCount: result.compatibility.length,
       teamCompositionCount: result.teamComposition.length,
       communicationInsightsCount: result.communicationInsights.length,
+      departmentCollaborationAvailable: result.departmentCollaboration?.metadata.available || false,
       metadata: result.metadata,
     })
 
@@ -105,6 +138,16 @@ export async function GET() {
         compatibility: [],
         teamComposition: [],
         communicationInsights: [],
+        departmentCollaboration: {
+          compatibilityMatrix: [],
+          profileComparisons: [],
+          recommendations: [],
+          metadata: {
+            departmentCount: 0,
+            totalPairs: 0,
+            available: false,
+          },
+        },
         metadata: {
           departmentCount: 0,
           totalResults: 0,
