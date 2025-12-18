@@ -89,6 +89,10 @@ interface CommunicationGuide {
   howNotToCommunicate: string[]
 }
 
+interface AdminDashboardProps {
+  initialTeamCode?: string
+}
+
 const profileDescriptions: Record<DISCType, ProfileDescription> = {
   D: {
     name: 'Dominance',
@@ -294,10 +298,10 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
   },
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps) {
   const router = useRouter()
   const [allResults, setAllResults] = useState<Result[]>([])
-  const [selectedTeamCode, setSelectedTeamCode] = useState<string>('')
+  const [selectedTeamCode, setSelectedTeamCode] = useState<string>(initialTeamCode || '')
   const [availableTeamCodes, setAvailableTeamCodes] = useState<string[]>([])
   const [insights, setInsights] = useState<{
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
