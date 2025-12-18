@@ -1110,7 +1110,21 @@ export default function DISCAssessment() {
     if (currentView === 'admin') {
       setLoadingResults(true)
       fetch('/api/results')
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) {
+            let errorMessage = `Failed to fetch results: ${res.status} ${res.statusText}`
+            try {
+              const errorData = await res.json()
+              if (errorData && (errorData.error || errorData.details)) {
+                errorMessage = errorData.error || errorData.details
+              }
+            } catch {
+              // Ignore JSON parse errors and fall back to generic message
+            }
+            throw new Error(errorMessage)
+          }
+          return res.json()
+        })
         .then((data) => {
           setAllResults(data)
           setLoadingResults(false)
@@ -1122,7 +1136,21 @@ export default function DISCAssessment() {
 
       setLoadingInsights(true)
       fetch('/api/insights')
-        .then((res) => res.json())
+        .then(async (res) => {
+          if (!res.ok) {
+            let errorMessage = `Failed to fetch insights: ${res.status} ${res.statusText}`
+            try {
+              const errorData = await res.json()
+              if (errorData && (errorData.error || errorData.details)) {
+                errorMessage = errorData.error || errorData.details
+              }
+            } catch {
+              // Ignore JSON parse errors and fall back to generic message
+            }
+            throw new Error(errorMessage)
+          }
+          return res.json()
+        })
         .then((data) => {
           setInsights(data)
           setLoadingInsights(false)

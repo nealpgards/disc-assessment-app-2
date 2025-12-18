@@ -298,6 +298,18 @@ export default function AdminDashboard() {
     setInsightsError(null)
     try {
       const res = await fetch('/api/insights')
+      if (!res.ok) {
+        let errorMessage = `Failed to fetch insights: ${res.status} ${res.statusText}`
+        try {
+          const errorData = await res.json()
+          if (errorData && (errorData.error || errorData.details)) {
+            errorMessage = errorData.error || errorData.details
+          }
+        } catch {
+          // Ignore JSON parse errors and use generic message
+        }
+        throw new Error(errorMessage)
+      }
       const data = await res.json()
       
       console.log('Insights API response:', {
@@ -309,10 +321,6 @@ export default function AdminDashboard() {
         communicationInsights: data.communicationInsights?.length || 0,
         metadata: data.metadata,
       })
-      
-      if (!res.ok) {
-        throw new Error(data.error || data.details || `Failed to fetch insights: ${res.status} ${res.statusText}`)
-      }
       
       // Ensure we have the expected structure
       const insightsData = {
@@ -1245,8 +1253,14 @@ export default function AdminDashboard() {
                               <div className="space-y-3">
                                 {rec.recommendations
                                   .sort((a, b) => {
-                                    const priorityOrder = { high: 0, medium: 1, low: 2 }
-                                    return priorityOrder[a.priority] - priorityOrder[b.priority]
+                                    const priorityOrder: Record<'high' | 'medium' | 'low', number> = {
+                                      high: 0,
+                                      medium: 1,
+                                      low: 2,
+                                    }
+                                    const aPriority = a.priority as 'high' | 'medium' | 'low'
+                                    const bPriority = b.priority as 'high' | 'medium' | 'low'
+                                    return priorityOrder[aPriority] - priorityOrder[bPriority]
                                   })
                                   .map((recommendation, i) => (
                                     <div
