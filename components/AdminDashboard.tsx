@@ -63,6 +63,7 @@ interface Result {
   name: string
   email?: string
   dept: string
+  teamCode?: string
   natural: Scores
   adaptive: Scores
   primaryNatural: DISCType
@@ -233,10 +234,18 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
 export default function AdminDashboard() {
   const router = useRouter()
   const [allResults, setAllResults] = useState<Result[]>([])
+  const [selectedTeamCode, setSelectedTeamCode] = useState<string>('')
+  const [availableTeamCodes, setAvailableTeamCodes] = useState<string[]>([])
   const [insights, setInsights] = useState<{
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
     teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
     communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+    departmentCollaboration?: {
+      compatibilityMatrix: Array<{ dept1: string; dept2: string; score: number; details: any }>
+      profileComparisons: Array<{ dept1: string; dept2: string; comparison: any }>
+      recommendations: Array<{ dept1: string; dept2: string; recommendations: any[] }>
+      metadata: { departmentCount: number; totalPairs: number; available: boolean }
+    }
     metadata?: {
       departmentCount: number
       totalResults: number
@@ -255,7 +264,22 @@ export default function AdminDashboard() {
     setLoadingResults(true)
     setResultsError(null)
     try {
-      const res = await fetch('/api/results')
+      // First, fetch all results to get available team codes
+      const allRes = await fetch('/api/results')
+      if (!allRes.ok) {
+        throw new Error(`Failed to fetch results: ${allRes.status} ${allRes.statusText}`)
+      }
+      const allData = await allRes.json()
+      
+      // Extract unique team codes from all results
+      const teamCodes = [...new Set(allData.map((r: Result) => r.teamCode).filter(Boolean))] as string[]
+      setAvailableTeamCodes(teamCodes.sort())
+      
+      // Then fetch filtered results if team code is selected
+      const url = selectedTeamCode 
+        ? `/api/results?teamCode=${encodeURIComponent(selectedTeamCode)}`
+        : '/api/results'
+      const res = await fetch(url)
       if (!res.ok) {
         throw new Error(`Failed to fetch results: ${res.status} ${res.statusText}`)
       }
@@ -295,6 +319,7 @@ export default function AdminDashboard() {
         compatibility: Array.isArray(data.compatibility) ? data.compatibility : [],
         teamComposition: Array.isArray(data.teamComposition) ? data.teamComposition : [],
         communicationInsights: Array.isArray(data.communicationInsights) ? data.communicationInsights : [],
+        departmentCollaboration: data.departmentCollaboration || undefined,
         metadata: data.metadata || {
           departmentCount: 0,
           totalResults: 0,
@@ -317,6 +342,7 @@ export default function AdminDashboard() {
         compatibility: [],
         teamComposition: [],
         communicationInsights: [],
+        departmentCollaboration: undefined,
         metadata: {
           departmentCount: 0,
           totalResults: 0,
@@ -335,7 +361,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadResults()
     loadInsights()
-  }, [])
+  }, [selectedTeamCode]) // Reload when team code changes
 
   // Refresh on window focus
   useEffect(() => {
@@ -467,10 +493,24 @@ export default function AdminDashboard() {
             <div>
               <h1 className="text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
               <p className="text-slate-600">
-                {allResults.length} assessments • Natural & Adaptive Profiles
+                {allResults.length} assessments {selectedTeamCode ? `for team ${selectedTeamCode}` : '(all teams)'} • Natural & Adaptive Profiles
               </p>
             </div>
             <div className="flex gap-3">
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedTeamCode}
+                  onChange={(e) => setSelectedTeamCode(e.target.value)}
+                  className="px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">All Teams</option>
+                  {availableTeamCodes.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <Button
                 variant="outline"
                 onClick={refreshData}
@@ -674,6 +714,7 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="border-b border-slate-200">
                     <th className="text-left py-3 px-3 font-semibold text-slate-700">Name</th>
+                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Team Code</th>
                     <th className="text-left py-3 px-3 font-semibold text-slate-700">Dept</th>
                     <th className="text-center py-3 px-2 font-semibold text-emerald-700">Natural</th>
                     <th className="text-center py-3 px-2 font-semibold text-orange-700">Adaptive</th>
@@ -697,6 +738,15 @@ export default function AdminDashboard() {
                   {allResults.map((r, i) => (
                     <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
                       <td className="py-3 px-3 font-medium">{r.name}</td>
+                      <td className="py-3 px-3">
+                        {r.teamCode ? (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                            {r.teamCode}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs">—</span>
+                        )}
+                      </td>
                       <td className="py-3 px-3">{r.dept}</td>
                       <td className="py-3 px-2 text-center">
                         <span
@@ -849,183 +899,396 @@ export default function AdminDashboard() {
             </>
           )}
 
-          {/* Department Collaboration Insights */}
+          {/* Department Collaboration Analysis */}
           <div className="border-t-2 border-slate-200 pt-8 mb-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Insights</h2>
+            <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Analysis</h2>
             
-            {!insights && !loadingInsights && (
+            {loadingInsights && (
+              <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                <p className="text-slate-500 text-center py-8">Loading department collaboration analysis...</p>
+              </div>
+            )}
+
+            {!loadingInsights && !insights?.departmentCollaboration && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-sm font-semibold text-amber-800 mb-1">Insights Not Loaded</p>
+                <p className="text-sm font-semibold text-amber-800 mb-1">Analysis Not Available</p>
                 <p className="text-sm text-amber-700">
-                  Insights data has not been loaded yet. Click refresh to load insights.
+                  {insights?.metadata?.departmentCount === 0
+                    ? 'No department data available. Complete assessments to see collaboration analysis.'
+                    : insights?.metadata?.departmentCount === 1
+                      ? 'Need at least 2 departments with results to analyze collaboration.'
+                      : 'Department collaboration data has not been loaded. Click refresh to load analysis.'}
                 </p>
               </div>
             )}
-            
-            {insights && (
-              <>
 
-                {/* Compatibility Matrix */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
-                  <h3 className="font-semibold text-slate-800 mb-4">Department Compatibility Matrix</h3>
-                  {loadingInsights ? (
-                    <p className="text-slate-500 py-4">Loading compatibility analysis...</p>
-                  ) : insights.compatibility.length > 0 ? (
-                    <div className="space-y-4">
-                      {insights.compatibility.map((comp, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-3">
-                              <span className="font-semibold text-slate-700">{comp.dept1}</span>
-                              <span className="text-slate-400">↔</span>
-                              <span className="font-semibold text-slate-700">{comp.dept2}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-2xl font-bold" style={{ color: comp.score >= 80 ? '#10b981' : comp.score >= 60 ? '#f59e0b' : '#ef4444' }}>
-                                {comp.score}%
-                              </div>
-                              <div className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold ${
-                                comp.score >= 80 ? 'bg-emerald-500' : comp.score >= 60 ? 'bg-amber-500' : 'bg-red-500'
-                              }`}>
-                                {comp.score >= 80 ? '✓' : comp.score >= 60 ? '~' : '!'}
-                              </div>
+            {!loadingInsights && insights?.departmentCollaboration && (
+              <>
+                {!insights.departmentCollaboration.metadata?.available ? (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <p className="text-sm font-semibold text-blue-800 mb-1">Insufficient Data</p>
+                    <p className="text-sm text-blue-700">
+                      Need at least 2 departments with results to analyze collaboration. Currently have{' '}
+                      {insights.departmentCollaboration.metadata?.departmentCount || 0} department(s).
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Tab Navigation */}
+                    <div className="flex gap-2 mb-6 border-b border-slate-200">
+                      <button
+                        className="px-4 py-2 font-medium text-sm border-b-2 border-blue-500 text-blue-600"
+                        onClick={() => {}}
+                      >
+                        Compatibility Matrix
+                      </button>
+                    </div>
+
+                    {/* Compatibility Matrix Heatmap */}
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                      <h3 className="font-semibold text-slate-800 mb-4">Compatibility Matrix</h3>
+                      {insights.departmentCollaboration.compatibilityMatrix &&
+                      Array.isArray(insights.departmentCollaboration.compatibilityMatrix) &&
+                      insights.departmentCollaboration.compatibilityMatrix.length > 0 ? (
+                        <div className="space-y-4">
+                          {/* Heatmap Grid */}
+                          <div className="bg-white rounded-lg p-4 border border-slate-200 overflow-x-auto">
+                            <div className="min-w-[600px]">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr>
+                                    <th className="text-left py-2 px-3 font-semibold text-slate-700"></th>
+                                    {Array.from(
+                                      new Set(
+                                        insights.departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                          m.dept1,
+                                          m.dept2,
+                                        ])
+                                      )
+                                    )
+                                      .sort()
+                                      .map((dept) => (
+                                        <th
+                                          key={dept}
+                                          className="text-center py-2 px-2 font-semibold text-slate-700 text-xs"
+                                        >
+                                          {dept}
+                                        </th>
+                                      ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {Array.from(
+                                    new Set(
+                                      insights.departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                        m.dept1,
+                                        m.dept2,
+                                      ])
+                                    )
+                                  )
+                                    .sort()
+                                    .map((dept1) => (
+                                      <tr key={dept1}>
+                                        <td className="py-2 px-3 font-medium text-slate-700 text-xs">{dept1}</td>
+                                        {Array.from(
+                                          new Set(
+                                            insights.departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                              m.dept1,
+                                              m.dept2,
+                                            ])
+                                          )
+                                        )
+                                          .sort()
+                                          .map((dept2) => {
+                                            if (dept1 === dept2) {
+                                              return (
+                                                <td key={dept2} className="py-2 px-2 text-center">
+                                                  <div className="w-12 h-12 rounded bg-slate-200 flex items-center justify-center text-slate-400 text-xs font-bold">
+                                                    —
+                                                  </div>
+                                                </td>
+                                              )
+                                            }
+                                            const entry = insights.departmentCollaboration.compatibilityMatrix.find(
+                                              (m) =>
+                                                (m.dept1 === dept1 && m.dept2 === dept2) ||
+                                                (m.dept1 === dept2 && m.dept2 === dept1)
+                                            )
+                                            if (!entry) {
+                                              return (
+                                                <td key={dept2} className="py-2 px-2 text-center">
+                                                  <div className="w-12 h-12 rounded bg-slate-100"></div>
+                                                </td>
+                                              )
+                                            }
+                                            const colorClass =
+                                              entry.score >= 80
+                                                ? 'bg-emerald-500 hover:bg-emerald-600'
+                                                : entry.score >= 60
+                                                  ? 'bg-amber-500 hover:bg-amber-600'
+                                                  : 'bg-red-500 hover:bg-red-600'
+                                            return (
+                                              <td key={dept2} className="py-2 px-2 text-center">
+                                                <div
+                                                  className={`w-12 h-12 rounded ${colorClass} flex items-center justify-center text-white text-xs font-bold cursor-pointer transition-colors`}
+                                                  title={`${entry.dept1} ↔ ${entry.dept2}: ${entry.score}% - ${entry.details.reasoning}`}
+                                                >
+                                                  {entry.score}
+                                                </div>
+                                              </td>
+                                            )
+                                          })}
+                                      </tr>
+                                    ))}
+                                </tbody>
+                              </table>
                             </div>
                           </div>
-                          <p className="text-sm text-slate-600">{comp.reasoning}</p>
+
+                          {/* Detailed List */}
+                          <div className="space-y-3">
+                            <h4 className="font-medium text-slate-700 text-sm">Detailed Compatibility Scores</h4>
+                            {insights.departmentCollaboration.compatibilityMatrix
+                              .sort((a, b) => b.score - a.score)
+                              .map((entry, idx) => (
+                                <div
+                                  key={idx}
+                                  className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                      <span className="font-semibold text-slate-700">{entry.dept1}</span>
+                                      <span className="text-slate-400">↔</span>
+                                      <span className="font-semibold text-slate-700">{entry.dept2}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className="text-2xl font-bold"
+                                        style={{
+                                          color:
+                                            entry.score >= 80 ? '#10b981' : entry.score >= 60 ? '#f59e0b' : '#ef4444',
+                                        }}
+                                      >
+                                        {entry.score}%
+                                      </div>
+                                      <div
+                                        className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold ${
+                                          entry.score >= 80
+                                            ? 'bg-emerald-500'
+                                            : entry.score >= 60
+                                              ? 'bg-amber-500'
+                                              : 'bg-red-500'
+                                        }`}
+                                      >
+                                        {entry.score >= 80 ? '✓' : entry.score >= 60 ? '~' : '!'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-slate-600 mb-2">{entry.details.reasoning}</p>
+                                  <div className="flex gap-4 text-xs text-slate-500">
+                                    <span>
+                                      Natural: {entry.details.primaryType1} ↔ {entry.details.primaryType2} (
+                                      {entry.details.naturalCompatibility}%)
+                                    </span>
+                                    <span>
+                                      Adaptive: {entry.details.adaptiveCompatibility}% | Diff:{' '}
+                                      {entry.details.scoreDifference}%
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-blue-800 mb-1">Compatibility Analysis Unavailable</p>
-                      <p className="text-sm text-blue-700">
-                        {insights.metadata?.compatibilityReason || 'Need at least 2 departments with results to calculate compatibility'}
-                      </p>
-                      {insights.metadata && (
-                        <div className="mt-2 text-xs text-blue-600">
-                          <p>Current status: {insights.metadata.departmentCount} department(s) with {insights.metadata.totalResults} total result(s)</p>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-700">No compatibility data available.</p>
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
 
-                {/* Team Composition Analysis */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
-                  <h3 className="font-semibold text-slate-800 mb-4">Team Composition Analysis</h3>
-                  {loadingInsights ? (
-                    <p className="text-slate-500 py-4">Loading team composition analysis...</p>
-                  ) : insights.teamComposition.length > 0 ? (
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {insights.teamComposition.map((comp, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                          <h4 className="font-semibold text-slate-700 mb-3">{comp.department}</h4>
-                          
-                          {comp.strengths.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-xs font-semibold text-emerald-700 mb-1">Strengths:</p>
-                              <ul className="text-sm text-slate-600 space-y-1">
-                                {comp.strengths.map((strength, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className="text-emerald-500">✓</span>
-                                    <span>{strength}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                    {/* Profile Comparisons */}
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                      <h3 className="font-semibold text-slate-800 mb-4">Department Profile Comparisons</h3>
+                      {insights.departmentCollaboration.profileComparisons &&
+                      Array.isArray(insights.departmentCollaboration.profileComparisons) &&
+                      insights.departmentCollaboration.profileComparisons.length > 0 ? (
+                        <div className="space-y-6">
+                          {insights.departmentCollaboration.profileComparisons.map((comp, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm">
+                              <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-lg font-semibold text-slate-700">
+                                  {comp.dept1} vs {comp.dept2}
+                                </h4>
+                                <div className="flex gap-2">
+                                  <span
+                                    className="px-3 py-1 rounded text-white text-sm font-bold"
+                                    style={{
+                                      backgroundColor: profileDescriptions[comp.comparison.natural.primaryType1].color,
+                                    }}
+                                  >
+                                    {comp.comparison.natural.primaryType1}
+                                  </span>
+                                  <span className="text-slate-400">vs</span>
+                                  <span
+                                    className="px-3 py-1 rounded text-white text-sm font-bold"
+                                    style={{
+                                      backgroundColor: profileDescriptions[comp.comparison.natural.primaryType2].color,
+                                    }}
+                                  >
+                                    {comp.comparison.natural.primaryType2}
+                                  </span>
+                                </div>
+                              </div>
 
-                          {comp.gaps.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-xs font-semibold text-amber-700 mb-1">Potential Gaps:</p>
-                              <ul className="text-sm text-slate-600 space-y-1">
-                                {comp.gaps.map((gap, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className="text-amber-500">⚠</span>
-                                    <span>{gap}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                              <p className="text-sm text-slate-600 mb-4">{comp.comparison.summary}</p>
 
-                          {comp.recommendations.length > 0 && (
-                            <div>
-                              <p className="text-xs font-semibold text-blue-700 mb-1">Recommendations:</p>
-                              <ul className="text-sm text-slate-600 space-y-1">
-                                {comp.recommendations.map((rec, i) => (
-                                  <li key={i} className="flex items-start gap-2">
-                                    <span className="text-blue-500">💡</span>
-                                    <span>{rec}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                              {/* Natural Profile Comparison Chart */}
+                              <div className="mb-6">
+                                <h5 className="text-sm font-semibold text-emerald-700 mb-3">Natural Profiles</h5>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <BarChart data={[
+                                    {
+                                      type: 'D',
+                                      dept1: comp.comparison.natural.dept1Scores.D,
+                                      dept2: comp.comparison.natural.dept2Scores.D,
+                                    },
+                                    {
+                                      type: 'I',
+                                      dept1: comp.comparison.natural.dept1Scores.I,
+                                      dept2: comp.comparison.natural.dept2Scores.I,
+                                    },
+                                    {
+                                      type: 'S',
+                                      dept1: comp.comparison.natural.dept1Scores.S,
+                                      dept2: comp.comparison.natural.dept2Scores.S,
+                                    },
+                                    {
+                                      type: 'C',
+                                      dept1: comp.comparison.natural.dept1Scores.C,
+                                      dept2: comp.comparison.natural.dept2Scores.C,
+                                    },
+                                  ]}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="type" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="dept1" name={comp.dept1} fill="#10b981" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="dept2" name={comp.dept2} fill="#f97316" radius={[4, 4, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
+
+                              {/* Adaptive Profile Comparison Chart */}
+                              <div>
+                                <h5 className="text-sm font-semibold text-orange-700 mb-3">Adaptive Profiles</h5>
+                                <ResponsiveContainer width="100%" height={200}>
+                                  <BarChart data={[
+                                    {
+                                      type: 'D',
+                                      dept1: comp.comparison.adaptive.dept1Scores.D,
+                                      dept2: comp.comparison.adaptive.dept2Scores.D,
+                                    },
+                                    {
+                                      type: 'I',
+                                      dept1: comp.comparison.adaptive.dept1Scores.I,
+                                      dept2: comp.comparison.adaptive.dept2Scores.I,
+                                    },
+                                    {
+                                      type: 'S',
+                                      dept1: comp.comparison.adaptive.dept1Scores.S,
+                                      dept2: comp.comparison.adaptive.dept2Scores.S,
+                                    },
+                                    {
+                                      type: 'C',
+                                      dept1: comp.comparison.adaptive.dept1Scores.C,
+                                      dept2: comp.comparison.adaptive.dept2Scores.C,
+                                    },
+                                  ]}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="type" />
+                                    <YAxis />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Bar dataKey="dept1" name={comp.dept1} fill="#10b981" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="dept2" name={comp.dept2} fill="#f97316" radius={[4, 4, 0, 0]} />
+                                  </BarChart>
+                                </ResponsiveContainer>
+                              </div>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-amber-800 mb-1">Team Composition Analysis Unavailable</p>
-                      <p className="text-sm text-amber-700">
-                        No department data available. Complete assessments to see team composition insights.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Communication Style Insights */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8 min-h-[120px]">
-                  <h3 className="font-semibold text-slate-800 mb-4">Communication Style Insights</h3>
-                  {loadingInsights ? (
-                    <p className="text-slate-500 py-4">Loading communication insights...</p>
-                  ) : insights.communicationInsights.length > 0 ? (
-                    <div className="space-y-4">
-                      {insights.communicationInsights.map((insight, idx) => (
-                        <div key={idx} className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm">
-                          <div className="flex items-center gap-3 mb-3">
-                            <h4 className="font-semibold text-slate-700">{insight.department}</h4>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                              {insight.style}
-                            </span>
-                          </div>
-
-                          <div className="mb-3">
-                            <p className="text-xs font-semibold text-slate-600 mb-2">Communication Preferences:</p>
-                            <ul className="text-sm text-slate-600 space-y-1">
-                              {insight.preferences.map((pref, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <span className="text-slate-400">•</span>
-                                  <span>{pref}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-semibold text-purple-700 mb-2">Inter-Department Recommendations:</p>
-                            <ul className="text-sm text-slate-600 space-y-1">
-                              {insight.recommendations.map((rec, i) => (
-                                <li key={i} className="flex items-start gap-2">
-                                  <span className="text-purple-500">→</span>
-                                  <span>{rec}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-700">No profile comparison data available.</p>
                         </div>
-                      ))}
+                      )}
                     </div>
-                  ) : (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <p className="text-sm font-semibold text-amber-800 mb-1">Communication Insights Unavailable</p>
-                      <p className="text-sm text-amber-700">
-                        No department data available. Complete assessments to see communication style insights.
-                      </p>
+
+                    {/* Collaboration Recommendations */}
+                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                      <h3 className="font-semibold text-slate-800 mb-4">Collaboration Recommendations</h3>
+                      {insights.departmentCollaboration.recommendations &&
+                      Array.isArray(insights.departmentCollaboration.recommendations) &&
+                      insights.departmentCollaboration.recommendations.length > 0 ? (
+                        <div className="space-y-4">
+                          {insights.departmentCollaboration.recommendations.map((rec, idx) => (
+                            <div key={idx} className="bg-white rounded-lg p-5 border border-slate-200 shadow-sm">
+                              <div className="flex items-center gap-3 mb-4">
+                                <h4 className="font-semibold text-slate-700">
+                                  {rec.dept1} ↔ {rec.dept2}
+                                </h4>
+                              </div>
+                              <div className="space-y-3">
+                                {rec.recommendations
+                                  .sort((a, b) => {
+                                    const priorityOrder = { high: 0, medium: 1, low: 2 }
+                                    return priorityOrder[a.priority] - priorityOrder[b.priority]
+                                  })
+                                  .map((recommendation, i) => (
+                                    <div
+                                      key={i}
+                                      className={`p-3 rounded-lg border-l-4 ${
+                                        recommendation.priority === 'high'
+                                          ? 'bg-red-50 border-red-500'
+                                          : recommendation.priority === 'medium'
+                                            ? 'bg-amber-50 border-amber-500'
+                                            : 'bg-blue-50 border-blue-500'
+                                      }`}
+                                    >
+                                      <div className="flex items-start gap-2">
+                                        <span
+                                          className={`text-xs font-semibold px-2 py-1 rounded ${
+                                            recommendation.priority === 'high'
+                                              ? 'bg-red-100 text-red-700'
+                                              : recommendation.priority === 'medium'
+                                                ? 'bg-amber-100 text-amber-700'
+                                                : 'bg-blue-100 text-blue-700'
+                                          }`}
+                                        >
+                                          {recommendation.priority.toUpperCase()}
+                                        </span>
+                                        <span
+                                          className={`text-xs font-medium px-2 py-1 rounded bg-slate-100 text-slate-600`}
+                                        >
+                                          {recommendation.category}
+                                        </span>
+                                      </div>
+                                      <p className="text-sm text-slate-700 mt-2">{recommendation.text}</p>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                          <p className="text-sm text-blue-700">No recommendations available.</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </>
             )}
           </div>

@@ -196,6 +196,9 @@ export async function generatePDFReport(
   const adaptiveProfile = profileDescriptions[scores.primaryAdaptive]
   const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
 
+  // Calculate total pages
+  const totalPages = result.drivingForces ? 10 : 7
+
   // ========== PAGE 1: COVER PAGE ==========
   doc.setFillColor(248, 250, 252) // slate-50
   doc.rect(0, 0, pageWidth, pageHeight, 'F')
@@ -277,7 +280,7 @@ export async function generatePDFReport(
   doc.setTextColor(30, 41, 59)
   doc.text(adaptiveProfile.name, margin + boxWidth + 20, yPos + 35)
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 2: EXECUTIVE SUMMARY ==========
@@ -340,7 +343,7 @@ export async function generatePDFReport(
     addWrappedText(doc, shiftText, margin + 5, yPos, contentWidth - 10, 6, 10)
   }
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 3: SCORE BREAKDOWN ==========
@@ -440,7 +443,7 @@ export async function generatePDFReport(
     yPos += 8
   })
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 4: VISUALIZATIONS ==========
@@ -499,7 +502,7 @@ export async function generatePDFReport(
     }
   }
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 5: PROFILE DESCRIPTIONS ==========
@@ -554,7 +557,7 @@ export async function generatePDFReport(
     yPos += 12
   })
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 6: YOUR PERSONALIZED INSIGHTS ==========
@@ -617,7 +620,7 @@ export async function generatePDFReport(
   doc.setTextColor(51, 65, 85)
   addWrappedText(doc, naturalProfile.growth, margin + 5, yPos, contentWidth - 10, 6, 10)
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
   // ========== PAGE 7: UNDERSTANDING YOUR SCORES & NEXT STEPS ==========
@@ -690,7 +693,147 @@ The percentages indicate the relative strength of each DISC dimension in your pr
     )
   }
 
-  addPageNumber(doc, currentPage, 7)
+  addPageNumber(doc, currentPage, totalPages)
+  currentPage++
+
+  // ========== DRIVING FORCES SECTIONS (if available) ==========
+  if (result.drivingForces) {
+    // We need the driving force descriptions - these should be passed or imported
+    // For now, we'll create a simplified version
+    const drivingForceDescriptions: Record<string, any> = {} // This would need to be passed in or imported
+
+    // Skip if we don't have descriptions (they're in the component)
+    // In a real implementation, these would be passed as a parameter or imported
+    
+    // For now, we'll add a basic driving forces page
+    // PAGE 8: Driving Forces Overview
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'Your Driving Forces Profile')
+
+    yPos = 40
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+    yPos = addWrappedText(
+      doc,
+      'Your driving forces reveal what motivates you and drives your decisions. Understanding these motivators helps you align your work and goals with what truly energizes you.',
+      margin,
+      yPos,
+      contentWidth,
+      7,
+      11
+    ) + 10
+
+    // Primary Forces Summary
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text('Primary Driving Forces by Motivator', margin, yPos)
+    yPos += 15
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+
+    const motivators = ['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies']
+    motivators.forEach((motivator) => {
+      if (yPos > pageHeight - 30) {
+        doc.addPage()
+        currentPage++
+        yPos = margin + 20
+      }
+      const primaryType = result.drivingForces.primaryForces[motivator]
+      const score = result.drivingForces.scores[primaryType] || 0
+      doc.text(`${motivator}: ${primaryType} (${score} points)`, margin + 5, yPos)
+      yPos += 8
+    })
+
+    addPageNumber(doc, currentPage, totalPages)
+    currentPage++
+
+    // PAGE 9: DISC Integration (if we can calculate it)
+    // Note: This would require passing additional data or calculating here
+    // For now, we'll add a placeholder note
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'DISC & Driving Forces Integration')
+
+    yPos = 40
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+    yPos = addWrappedText(
+      doc,
+      `Your ${scores.primaryNatural} behavioral style interacts with your driving forces in unique ways. Understanding this integration helps you leverage both your natural behavior and your core motivations for maximum effectiveness.`,
+      margin,
+      yPos,
+      contentWidth,
+      7,
+      11
+    ) + 15
+
+    doc.setFontSize(10)
+    doc.setTextColor(71, 85, 105)
+    doc.text(
+      'For detailed integration analysis, please refer to your online results dashboard.',
+      margin,
+      yPos
+    )
+
+    addPageNumber(doc, currentPage, totalPages)
+    currentPage++
+
+    // PAGE 10: Development Recommendations
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'Development Recommendations')
+
+    yPos = 40
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+    yPos = addWrappedText(
+      doc,
+      'Use these recommendations to leverage your driving forces for personal and professional growth.',
+      margin,
+      yPos,
+      contentWidth,
+      7,
+      11
+    ) + 10
+
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text('Key Recommendations', margin, yPos)
+    yPos += 10
+
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(51, 65, 85)
+
+    const recommendations = [
+      'Focus on opportunities that align with your primary driving forces',
+      'Be aware of situational forces that emerge in specific contexts',
+      'Recognize that indifferent forces have minimal impact on your motivation',
+      'Integrate your DISC behavioral style with your driving forces for maximum effectiveness',
+      'Regularly reflect on how your motivators align with your current activities',
+      'Seek roles and projects that naturally engage your primary forces',
+    ]
+
+    recommendations.forEach((rec, index) => {
+      if (yPos > pageHeight - 30) {
+        doc.addPage()
+        currentPage++
+        yPos = margin + 20
+      }
+      doc.text(`${index + 1}. ${rec}`, margin + 5, yPos)
+      yPos += 8
+    })
+
+    addPageNumber(doc, currentPage, totalPages)
+  }
 
   // Save the PDF
   const fileName = `DISC_Assessment_${result.name.replace(/\s+/g, '_')}_${result.date}.pdf`
@@ -714,10 +857,62 @@ interface AdminDashboardData {
   shifters: Result[]
 }
 
+interface AdminDepartmentCollaboration {
+  compatibilityMatrix: Array<{
+    dept1: string
+    dept2: string
+    score: number
+    details: {
+      primaryType1: DISCType
+      primaryType2: DISCType
+      naturalCompatibility: number
+      adaptiveCompatibility: number
+      scoreDifference: number
+      reasoning: string
+    }
+  }>
+  profileComparisons: Array<{
+    dept1: string
+    dept2: string
+    comparison: {
+      natural: {
+        dept1Scores: Scores
+        dept2Scores: Scores
+        differences: Scores
+        primaryType1: DISCType
+        primaryType2: DISCType
+      }
+      adaptive: {
+        dept1Scores: Scores
+        dept2Scores: Scores
+        differences: Scores
+        primaryType1: DISCType
+        primaryType2: DISCType
+      }
+      summary: string
+    }
+  }>
+  recommendations: Array<{
+    dept1: string
+    dept2: string
+    recommendations: Array<{
+      text: string
+      priority: 'high' | 'medium' | 'low'
+      category: 'communication' | 'workflow' | 'conflict' | 'synergy'
+    }>
+  }>
+  metadata: {
+    departmentCount: number
+    totalPairs: number
+    available: boolean
+  }
+}
+
 interface AdminInsights {
   compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
   teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
   communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+  departmentCollaboration?: AdminDepartmentCollaboration
 }
 
 export async function generateAdminDashboardPDF(
@@ -1092,42 +1287,232 @@ export async function generateAdminDashboardPDF(
 
   // ========== PAGE 6+: INSIGHTS ==========
   if (insights) {
-    // Compatibility Matrix
-    if (insights.compatibility.length > 0) {
+    const collaboration = insights.departmentCollaboration
+
+    // Department Compatibility / Collaboration (uses new analysis when available, falls back to basic compatibility)
+    const compatibilityEntries =
+      collaboration && collaboration.metadata?.available && collaboration.compatibilityMatrix?.length
+        ? collaboration.compatibilityMatrix.map((entry) => ({
+            dept1: entry.dept1,
+            dept2: entry.dept2,
+            score: entry.score,
+            reasoning: entry.details.reasoning,
+            naturalCompatibility: entry.details.naturalCompatibility,
+            adaptiveCompatibility: entry.details.adaptiveCompatibility,
+          }))
+        : insights.compatibility.map((comp) => ({
+            dept1: comp.dept1,
+            dept2: comp.dept2,
+            score: comp.score,
+            reasoning: comp.reasoning,
+          }))
+
+    if (compatibilityEntries.length > 0) {
       checkNewPage(30)
-      addHeader('Department Compatibility Matrix')
+      addHeader('Department Compatibility Overview')
       yPos += 5
 
-      insights.compatibility.forEach((comp) => {
-        checkNewPage(25)
-        doc.setFillColor(255, 255, 255)
-        doc.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'F')
-        doc.setDrawColor(200, 200, 200)
-        doc.roundedRect(margin, yPos, contentWidth, 20, 2, 2, 'S')
-
-        doc.setFontSize(11)
-        doc.setFont('helvetica', 'bold')
-        doc.setTextColor(30, 41, 59)
-        doc.text(`${comp.dept1} ↔ ${comp.dept2}`, margin + 5, yPos + 8)
-        
-        const scoreColor = comp.score >= 80 ? [16, 185, 129] : comp.score >= 60 ? [245, 158, 11] : [239, 68, 68]
-        doc.setFontSize(16)
-        doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2])
-        doc.text(`${comp.score}%`, margin + contentWidth - 20, yPos + 8, { align: 'right' })
-
-        doc.setFontSize(9)
+      // If we have collaboration metadata, include a short summary
+      if (collaboration && collaboration.metadata) {
+        doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
-        doc.setTextColor(71, 85, 105)
-        const reasoningLines = doc.splitTextToSize(comp.reasoning, contentWidth - 10)
-        doc.text(reasoningLines, margin + 5, yPos + 15)
-        yPos += 20 + reasoningLines.length * 4
-      })
+        doc.setTextColor(51, 65, 85)
+        const metaText = `Analyzed ${collaboration.metadata.departmentCount} departments across ${collaboration.metadata.totalPairs} department pairings.`
+        const metaLines = doc.splitTextToSize(metaText, contentWidth)
+        doc.text(metaLines, margin, yPos)
+        yPos += metaLines.length * 5 + 6
+      }
+
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(30, 41, 59)
+      doc.text('Top Department Pairings', margin, yPos)
+      yPos += 8
+
+      compatibilityEntries
+        .slice()
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10)
+        .forEach((comp) => {
+          checkNewPage(28)
+          doc.setFillColor(255, 255, 255)
+          doc.roundedRect(margin, yPos, contentWidth, 24, 2, 2, 'F')
+          doc.setDrawColor(200, 200, 200)
+          doc.roundedRect(margin, yPos, contentWidth, 24, 2, 2, 'S')
+
+          doc.setFontSize(11)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(30, 41, 59)
+          doc.text(`${comp.dept1} ↔ ${comp.dept2}`, margin + 5, yPos + 8)
+          
+          const scoreColor = comp.score >= 80 ? [16, 185, 129] : comp.score >= 60 ? [245, 158, 11] : [239, 68, 68]
+          doc.setFontSize(16)
+          doc.setTextColor(scoreColor[0], scoreColor[1], scoreColor[2])
+          doc.text(`${comp.score}%`, margin + contentWidth - 20, yPos + 8, { align: 'right' })
+
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(100, 116, 139)
+          if (typeof (comp as any).naturalCompatibility === 'number' && typeof (comp as any).adaptiveCompatibility === 'number') {
+            doc.text(
+              `Natural compatibility: ${(comp as any).naturalCompatibility}%   Adaptive compatibility: ${(comp as any).adaptiveCompatibility}%`,
+              margin + 5,
+              yPos + 15
+            )
+          }
+
+          doc.setFontSize(8)
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(71, 85, 105)
+          const reasoningLines = doc.splitTextToSize(comp.reasoning, contentWidth - 10)
+          doc.text(reasoningLines, margin + 5, yPos + 19)
+          yPos += 24 + reasoningLines.length * 3.5
+        })
 
       addPageNumber(currentPage, 10)
       currentPage++
     }
 
-    // Team Composition
+    // Department Profile Comparisons (new collaboration analysis)
+    if (
+      collaboration &&
+      collaboration.metadata?.available &&
+      collaboration.profileComparisons &&
+      collaboration.profileComparisons.length > 0
+    ) {
+      doc.addPage()
+      currentPage++
+      yPos = margin
+      addHeader('Department Profile Comparisons')
+      yPos += 3
+
+      const comparisons = collaboration.profileComparisons.slice(0, 5)
+
+      comparisons.forEach((comp) => {
+        checkNewPage(40)
+        doc.setFillColor(255, 255, 255)
+        doc.roundedRect(margin, yPos, contentWidth, 32, 2, 2, 'F')
+        doc.setDrawColor(200, 200, 200)
+        doc.roundedRect(margin, yPos, contentWidth, 32, 2, 2, 'S')
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(30, 41, 59)
+        doc.text(`${comp.dept1} vs ${comp.dept2}`, margin + 5, yPos + 7)
+
+        // Natural primary types
+        doc.setFontSize(8)
+        doc.setFont('helvetica', 'normal')
+        doc.setTextColor(71, 85, 105)
+        doc.text(
+          `Natural: ${comp.comparison.natural.primaryType1} vs ${comp.comparison.natural.primaryType2}`,
+          margin + 5,
+          yPos + 13
+        )
+
+        // Simple D/I/S/C line for natural and adaptive
+        const nat = comp.comparison.natural
+        const adp = comp.comparison.adaptive
+        doc.text(
+          `Natural scores  - ${comp.dept1}: D${nat.dept1Scores.D} I${nat.dept1Scores.I} S${nat.dept1Scores.S} C${nat.dept1Scores.C}`,
+          margin + 5,
+          yPos + 18
+        )
+        doc.text(
+          `                 ${comp.dept2}: D${nat.dept2Scores.D} I${nat.dept2Scores.I} S${nat.dept2Scores.S} C${nat.dept2Scores.C}`,
+          margin + 5,
+          yPos + 23
+        )
+        doc.text(
+          `Adaptive scores - ${comp.dept1}: D${adp.dept1Scores.D} I${adp.dept1Scores.I} S${adp.dept1Scores.S} C${adp.dept1Scores.C}`,
+          margin + 5,
+          yPos + 28
+        )
+
+        yPos += 34
+
+        // Summary text below card
+        checkNewPage(14)
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'italic')
+        doc.setTextColor(51, 65, 85)
+        const summaryLines = doc.splitTextToSize(comp.comparison.summary, contentWidth)
+        doc.text(summaryLines, margin, yPos)
+        yPos += summaryLines.length * 5 + 6
+      })
+
+      addPageNumber(currentPage, 10)
+    }
+
+    // Collaboration Recommendations (new collaboration analysis)
+    if (
+      collaboration &&
+      collaboration.metadata?.available &&
+      collaboration.recommendations &&
+      collaboration.recommendations.length > 0
+    ) {
+      doc.addPage()
+      currentPage++
+      yPos = margin
+      addHeader('Collaboration Recommendations')
+      yPos += 3
+
+      const priorityRank: Record<'high' | 'medium' | 'low', number> = {
+        high: 0,
+        medium: 1,
+        low: 2,
+      }
+
+      const recSets = collaboration.recommendations
+        .slice()
+        .sort((a, b) => {
+          const aHigh = a.recommendations.filter((r) => r.priority === 'high').length
+          const bHigh = b.recommendations.filter((r) => r.priority === 'high').length
+          return bHigh - aHigh
+        })
+        .slice(0, 5)
+
+      recSets.forEach((set) => {
+        checkNewPage(45)
+        doc.setFillColor(255, 255, 255)
+        doc.roundedRect(margin, yPos, contentWidth, 36, 2, 2, 'F')
+        doc.setDrawColor(200, 200, 200)
+        doc.roundedRect(margin, yPos, contentWidth, 36, 2, 2, 'S')
+
+        doc.setFontSize(11)
+        doc.setFont('helvetica', 'bold')
+        doc.setTextColor(30, 41, 59)
+        doc.text(`${set.dept1} ↔ ${set.dept2}`, margin + 5, yPos + 8)
+
+        let recY = yPos + 14
+        set.recommendations
+          .slice()
+          .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority])
+          .slice(0, 4)
+          .forEach((rec) => {
+            if (recY > yPos + 32) return
+            const color =
+              rec.priority === 'high' ? [220, 38, 38] : rec.priority === 'medium' ? [217, 119, 6] : [37, 99, 235]
+
+            doc.setFontSize(8)
+            doc.setFont('helvetica', 'bold')
+            doc.setTextColor(color[0], color[1], color[2])
+            doc.text(rec.priority.toUpperCase(), margin + 5, recY)
+
+            doc.setFont('helvetica', 'normal')
+            doc.setTextColor(51, 65, 85)
+            const recLines = doc.splitTextToSize(`${rec.category}: ${rec.text}`, contentWidth - 40)
+            doc.text(recLines, margin + 30, recY)
+            recY += recLines.length * 4.5 + 3
+          })
+
+        yPos += 38
+      })
+
+      addPageNumber(currentPage, 10)
+    }
+
+    // Team Composition (legacy insights)
     if (insights.teamComposition.length > 0) {
       checkNewPage(30)
       addHeader('Team Composition Analysis')
@@ -1184,7 +1569,7 @@ export async function generateAdminDashboardPDF(
       currentPage++
     }
 
-    // Communication Insights
+    // Communication Insights (legacy insights)
     if (insights.communicationInsights.length > 0) {
       checkNewPage(30)
       addHeader('Communication Style Insights')

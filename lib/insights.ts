@@ -540,3 +540,532 @@ export function getCommunicationInsights(): CommunicationInsight[] {
     return []
   }
 }
+
+// New Department Collaboration Analysis Types
+interface CompatibilityMatrixEntry {
+  dept1: string
+  dept2: string
+  score: number
+  details: {
+    primaryType1: DISCType
+    primaryType2: DISCType
+    naturalCompatibility: number
+    adaptiveCompatibility: number
+    scoreDifference: number
+    reasoning: string
+  }
+}
+
+interface ProfileComparison {
+  dept1: string
+  dept2: string
+  comparison: {
+    natural: {
+      dept1Scores: Scores
+      dept2Scores: Scores
+      differences: Scores
+      primaryType1: DISCType
+      primaryType2: DISCType
+    }
+    adaptive: {
+      dept1Scores: Scores
+      dept2Scores: Scores
+      differences: Scores
+      primaryType1: DISCType
+      primaryType2: DISCType
+    }
+    summary: string
+  }
+}
+
+interface CollaborationRecommendation {
+  dept1: string
+  dept2: string
+  recommendations: Array<{
+    text: string
+    priority: 'high' | 'medium' | 'low'
+    category: 'communication' | 'workflow' | 'conflict' | 'synergy'
+  }>
+}
+
+interface DepartmentCollaborationAnalysis {
+  compatibilityMatrix: CompatibilityMatrixEntry[]
+  profileComparisons: ProfileComparison[]
+  recommendations: CollaborationRecommendation[]
+  metadata: {
+    departmentCount: number
+    totalPairs: number
+    available: boolean
+  }
+}
+
+// Enhanced compatibility calculation with more details
+function calculateDetailedCompatibility(
+  dept1: DepartmentData,
+  dept2: DepartmentData
+): CompatibilityMatrixEntry | null {
+  try {
+    if (!dept1 || !dept2 || !dept1.avgNatural || !dept2.avgNatural) {
+      return null
+    }
+
+    const primaryType1 = getPrimaryType(dept1.avgNatural)
+    const primaryType2 = getPrimaryType(dept2.avgNatural)
+    const primaryAdaptive1 = getPrimaryType(dept1.avgAdaptive)
+    const primaryAdaptive2 = getPrimaryType(dept2.avgAdaptive)
+
+    // Natural profile compatibility
+    const naturalCompatibility = compatibilityMatrix[primaryType1]?.[primaryType2] || 0.5
+
+    // Adaptive profile compatibility
+    const adaptiveCompatibility = compatibilityMatrix[primaryAdaptive1]?.[primaryAdaptive2] || 0.5
+
+    // Calculate score difference (how similar their profiles are)
+    const scoreDifference = Math.abs(
+      Math.max(...Object.values(dept1.avgNatural)) -
+      Math.max(...Object.values(dept2.avgNatural))
+    )
+
+    // Base score from natural compatibility
+    let baseScore = naturalCompatibility
+
+    // Adjust based on adaptive compatibility (30% weight)
+    baseScore = baseScore * 0.7 + adaptiveCompatibility * 0.3
+
+    // Adjust based on balance (more balanced departments work better together)
+    const dept1Max = Math.max(...Object.values(dept1.avgNatural))
+    const dept2Max = Math.max(...Object.values(dept2.avgNatural))
+    const dept1Balance = dept1Max > 0 ? 1 - dept1Max / 100 : 0
+    const dept2Balance = dept2Max > 0 ? 1 - dept2Max / 100 : 0
+    const balanceBonus = ((dept1Balance + dept2Balance) / 2) * 0.15
+
+    // Adjust based on similarity (very different profiles can complement or conflict)
+    const similarityPenalty = scoreDifference > 30 ? 0.05 : 0
+    const finalScore = Math.min(1, Math.max(0, baseScore + balanceBonus - similarityPenalty))
+
+    return {
+      dept1: dept1.department,
+      dept2: dept2.department,
+      score: Math.round(finalScore * 100),
+      details: {
+        primaryType1,
+        primaryType2,
+        naturalCompatibility: Math.round(naturalCompatibility * 100),
+        adaptiveCompatibility: Math.round(adaptiveCompatibility * 100),
+        scoreDifference: Math.round(scoreDifference),
+        reasoning: getCompatibilityReasoning(primaryType1, primaryType2),
+      },
+    }
+  } catch (error) {
+    console.error(
+      `[Insights] Error calculating detailed compatibility for ${dept1?.department} and ${dept2?.department}:`,
+      error
+    )
+    return null
+  }
+}
+
+export function generateCompatibilityMatrix(): CompatibilityMatrixEntry[] {
+  try {
+    console.log('[Insights] Generating compatibility matrix...')
+    const deptData = getDepartmentData()
+
+    if (deptData.length < 2) {
+      console.log('[Insights] Not enough departments for compatibility matrix')
+      return []
+    }
+
+    const validDeptData = deptData.filter((dept) => {
+      return (
+        dept &&
+        dept.department &&
+        dept.count > 0 &&
+        dept.avgNatural &&
+        dept.avgAdaptive &&
+        Object.values(dept.avgNatural).every((s) => typeof s === 'number' && !isNaN(s))
+      )
+    })
+
+    if (validDeptData.length < 2) {
+      console.log('[Insights] Not enough valid departments for compatibility matrix')
+      return []
+    }
+
+    const matrix: CompatibilityMatrixEntry[] = []
+
+    for (let i = 0; i < validDeptData.length; i++) {
+      for (let j = i + 1; j < validDeptData.length; j++) {
+        const entry = calculateDetailedCompatibility(validDeptData[i], validDeptData[j])
+        if (entry) {
+          matrix.push(entry)
+        }
+      }
+    }
+
+    console.log(`[Insights] Generated compatibility matrix with ${matrix.length} entries`)
+    return matrix.sort((a, b) => b.score - a.score)
+  } catch (error) {
+    console.error('[Insights] Error generating compatibility matrix:', error)
+    return []
+  }
+}
+
+export function compareDepartmentProfiles(): ProfileComparison[] {
+  try {
+    console.log('[Insights] Comparing department profiles...')
+    const deptData = getDepartmentData()
+
+    if (deptData.length < 2) {
+      console.log('[Insights] Not enough departments for profile comparison')
+      return []
+    }
+
+    const validDeptData = deptData.filter((dept) => {
+      return (
+        dept &&
+        dept.department &&
+        dept.count > 0 &&
+        dept.avgNatural &&
+        dept.avgAdaptive &&
+        Object.values(dept.avgNatural).every((s) => typeof s === 'number' && !isNaN(s))
+      )
+    })
+
+    if (validDeptData.length < 2) {
+      console.log('[Insights] Not enough valid departments for profile comparison')
+      return []
+    }
+
+    const comparisons: ProfileComparison[] = []
+
+    for (let i = 0; i < validDeptData.length; i++) {
+      for (let j = i + 1; j < validDeptData.length; j++) {
+        try {
+          const dept1 = validDeptData[i]
+          const dept2 = validDeptData[j]
+
+          const primaryNatural1 = getPrimaryType(dept1.avgNatural)
+          const primaryNatural2 = getPrimaryType(dept2.avgNatural)
+          const primaryAdaptive1 = getPrimaryType(dept1.avgAdaptive)
+          const primaryAdaptive2 = getPrimaryType(dept2.avgAdaptive)
+
+          // Calculate differences
+          const naturalDifferences: Scores = {
+            D: dept1.avgNatural.D - dept2.avgNatural.D,
+            I: dept1.avgNatural.I - dept2.avgNatural.I,
+            S: dept1.avgNatural.S - dept2.avgNatural.S,
+            C: dept1.avgNatural.C - dept2.avgNatural.C,
+          }
+
+          const adaptiveDifferences: Scores = {
+            D: dept1.avgAdaptive.D - dept2.avgAdaptive.D,
+            I: dept1.avgAdaptive.I - dept2.avgAdaptive.I,
+            S: dept1.avgAdaptive.S - dept2.avgAdaptive.S,
+            C: dept1.avgAdaptive.C - dept2.avgAdaptive.C,
+          }
+
+          // Generate summary
+          const maxNaturalDiff = Math.max(...Object.values(naturalDifferences).map(Math.abs))
+          const maxAdaptiveDiff = Math.max(...Object.values(adaptiveDifferences).map(Math.abs))
+          
+          let summary = ''
+          if (primaryNatural1 === primaryNatural2) {
+            summary = `Both departments share a ${primaryNatural1}-dominant natural profile, which can lead to ${primaryNatural1 === 'D' ? 'strong results focus but potential conflicts' : primaryNatural1 === 'I' ? 'excellent collaboration but possible lack of structure' : primaryNatural1 === 'S' ? 'stability but potential resistance to change' : 'high quality but potential slowness'}.`
+          } else {
+            const compatibility = compatibilityMatrix[primaryNatural1]?.[primaryNatural2] || 0.5
+            if (compatibility >= 0.8) {
+              summary = `These departments have complementary profiles (${primaryNatural1} and ${primaryNatural2}) that work well together.`
+            } else if (compatibility >= 0.6) {
+              summary = `These departments have different but compatible profiles (${primaryNatural1} and ${primaryNatural2}) that can collaborate effectively.`
+            } else {
+              summary = `These departments have contrasting profiles (${primaryNatural1} and ${primaryNatural2}) that may require careful management to collaborate successfully.`
+            }
+          }
+
+          if (maxNaturalDiff > 20) {
+            summary += ` Significant differences in natural profiles (${Math.round(maxNaturalDiff)}% max difference) suggest different working styles.`
+          }
+
+          comparisons.push({
+            dept1: dept1.department,
+            dept2: dept2.department,
+            comparison: {
+              natural: {
+                dept1Scores: dept1.avgNatural,
+                dept2Scores: dept2.avgNatural,
+                differences: naturalDifferences,
+                primaryType1: primaryNatural1,
+                primaryType2: primaryNatural2,
+              },
+              adaptive: {
+                dept1Scores: dept1.avgAdaptive,
+                dept2Scores: dept2.avgAdaptive,
+                differences: adaptiveDifferences,
+                primaryType1: primaryAdaptive1,
+                primaryType2: primaryAdaptive2,
+              },
+              summary,
+            },
+          })
+        } catch (error) {
+          console.error(
+            `[Insights] Error comparing profiles for ${validDeptData[i]?.department} and ${validDeptData[j]?.department}:`,
+            error
+          )
+        }
+      }
+    }
+
+    console.log(`[Insights] Generated ${comparisons.length} profile comparisons`)
+    return comparisons
+  } catch (error) {
+    console.error('[Insights] Error comparing department profiles:', error)
+    return []
+  }
+}
+
+export function generateCollaborationRecommendations(): CollaborationRecommendation[] {
+  try {
+    console.log('[Insights] Generating collaboration recommendations...')
+    const deptData = getDepartmentData()
+
+    if (deptData.length < 2) {
+      console.log('[Insights] Not enough departments for recommendations')
+      return []
+    }
+
+    const validDeptData = deptData.filter((dept) => {
+      return (
+        dept &&
+        dept.department &&
+        dept.count > 0 &&
+        dept.avgNatural &&
+        dept.avgAdaptive &&
+        Object.values(dept.avgNatural).every((s) => typeof s === 'number' && !isNaN(s))
+      )
+    })
+
+    if (validDeptData.length < 2) {
+      console.log('[Insights] Not enough valid departments for recommendations')
+      return []
+    }
+
+    const recommendations: CollaborationRecommendation[] = []
+
+    for (let i = 0; i < validDeptData.length; i++) {
+      for (let j = i + 1; j < validDeptData.length; j++) {
+        try {
+          const dept1 = validDeptData[i]
+          const dept2 = validDeptData[j]
+
+          const primary1 = getPrimaryType(dept1.avgNatural)
+          const primary2 = getPrimaryType(dept2.avgNatural)
+          const compatibility = compatibilityMatrix[primary1]?.[primary2] || 0.5
+
+          const recs: CollaborationRecommendation['recommendations'] = []
+
+          // Communication recommendations
+          if (primary1 === 'D' && primary2 === 'S') {
+            recs.push({
+              text: `${dept1.department} should provide clear context and allow ${dept2.department} time to process information before expecting decisions.`,
+              priority: 'high',
+              category: 'communication',
+            })
+            recs.push({
+              text: `${dept2.department} should proactively communicate concerns and provide structured updates to ${dept1.department}.`,
+              priority: 'high',
+              category: 'communication',
+            })
+          } else if (primary1 === 'S' && primary2 === 'D') {
+            recs.push({
+              text: `${dept2.department} should provide clear context and allow ${dept1.department} time to process information before expecting decisions.`,
+              priority: 'high',
+              category: 'communication',
+            })
+            recs.push({
+              text: `${dept1.department} should proactively communicate concerns and provide structured updates to ${dept2.department}.`,
+              priority: 'high',
+              category: 'communication',
+            })
+          } else if (primary1 === 'I' && primary2 === 'C') {
+            recs.push({
+              text: `${dept1.department} should include data and specific details when communicating with ${dept2.department}.`,
+              priority: 'medium',
+              category: 'communication',
+            })
+            recs.push({
+              text: `${dept2.department} should use engaging examples and stories when presenting to ${dept1.department}.`,
+              priority: 'medium',
+              category: 'communication',
+            })
+          } else if (primary1 === 'C' && primary2 === 'I') {
+            recs.push({
+              text: `${dept2.department} should include data and specific details when communicating with ${dept1.department}.`,
+              priority: 'medium',
+              category: 'communication',
+            })
+            recs.push({
+              text: `${dept1.department} should use engaging examples and stories when presenting to ${dept2.department}.`,
+              priority: 'medium',
+              category: 'communication',
+            })
+          }
+
+          // Workflow recommendations
+          if (compatibility >= 0.8) {
+            recs.push({
+              text: `Leverage the strong compatibility between these departments by creating joint projects that capitalize on their complementary strengths.`,
+              priority: 'high',
+              category: 'synergy',
+            })
+          } else if (compatibility < 0.6) {
+            recs.push({
+              text: `Establish clear protocols and regular check-ins to manage potential conflicts arising from different working styles.`,
+              priority: 'high',
+              category: 'conflict',
+            })
+            recs.push({
+              text: `Consider assigning a neutral facilitator for joint initiatives to help bridge communication gaps.`,
+              priority: 'medium',
+              category: 'workflow',
+            })
+          }
+
+          // Specific workflow recommendations based on types
+          if (primary1 === 'D' || primary2 === 'D') {
+            recs.push({
+              text: `Set clear deadlines and action items. ${primary1 === 'D' ? dept1.department : dept2.department} will drive results, but ensure ${primary1 === 'D' ? dept2.department : dept1.department} has time to process.`,
+              priority: 'medium',
+              category: 'workflow',
+            })
+          }
+
+          if (primary1 === 'C' || primary2 === 'C') {
+            recs.push({
+              text: `Provide detailed documentation and allow time for quality review. ${primary1 === 'C' ? dept1.department : dept2.department} will ensure accuracy but may need more time.`,
+              priority: 'medium',
+              category: 'workflow',
+            })
+          }
+
+          if (primary1 === 'I' || primary2 === 'I') {
+            recs.push({
+              text: `Schedule regular collaborative sessions and celebrate wins together. ${primary1 === 'I' ? dept1.department : dept2.department} thrives on engagement and recognition.`,
+              priority: 'low',
+              category: 'synergy',
+            })
+          }
+
+          if (primary1 === 'S' || primary2 === 'S') {
+            recs.push({
+              text: `Maintain consistent processes and provide advance notice of changes. ${primary1 === 'S' ? dept1.department : dept2.department} values stability and predictability.`,
+              priority: 'medium',
+              category: 'workflow',
+            })
+          }
+
+          // Conflict prevention
+          if (primary1 === 'D' && primary2 === 'D') {
+            recs.push({
+              text: `Both departments are results-driven. Establish clear decision-making authority to prevent power struggles.`,
+              priority: 'high',
+              category: 'conflict',
+            })
+          }
+
+          if (primary1 === 'C' && primary2 === 'C') {
+            recs.push({
+              text: `Both departments value quality. Balance thoroughness with timeliness to avoid project delays.`,
+              priority: 'medium',
+              category: 'workflow',
+            })
+          }
+
+          recommendations.push({
+            dept1: dept1.department,
+            dept2: dept2.department,
+            recommendations: recs.length > 0 ? recs : [
+              {
+                text: 'Maintain regular communication and establish clear expectations for collaboration.',
+                priority: 'medium',
+                category: 'communication',
+              },
+            ],
+          })
+        } catch (error) {
+          console.error(
+            `[Insights] Error generating recommendations for ${validDeptData[i]?.department} and ${validDeptData[j]?.department}:`,
+            error
+          )
+        }
+      }
+    }
+
+    console.log(`[Insights] Generated ${recommendations.length} collaboration recommendation sets`)
+    return recommendations
+  } catch (error) {
+    console.error('[Insights] Error generating collaboration recommendations:', error)
+    return []
+  }
+}
+
+export function getDepartmentCollaborationAnalysis(): DepartmentCollaborationAnalysis {
+  try {
+    console.log('[Insights] Starting comprehensive department collaboration analysis...')
+    
+    const deptData = getDepartmentData()
+    const departmentCount = deptData.length
+    const totalPairs = departmentCount >= 2 ? (departmentCount * (departmentCount - 1)) / 2 : 0
+
+    if (departmentCount < 2) {
+      console.log('[Insights] Insufficient departments for collaboration analysis')
+      return {
+        compatibilityMatrix: [],
+        profileComparisons: [],
+        recommendations: [],
+        metadata: {
+          departmentCount,
+          totalPairs: 0,
+          available: false,
+        },
+      }
+    }
+
+    // Generate all analysis components
+    const compatibilityMatrix = generateCompatibilityMatrix()
+    const profileComparisons = compareDepartmentProfiles()
+    const recommendations = generateCollaborationRecommendations()
+
+    console.log('[Insights] Department collaboration analysis complete:', {
+      departmentCount,
+      totalPairs,
+      compatibilityEntries: compatibilityMatrix.length,
+      comparisons: profileComparisons.length,
+      recommendationSets: recommendations.length,
+    })
+
+    return {
+      compatibilityMatrix,
+      profileComparisons,
+      recommendations,
+      metadata: {
+        departmentCount,
+        totalPairs,
+        available: true,
+      },
+    }
+  } catch (error) {
+    console.error('[Insights] Error in getDepartmentCollaborationAnalysis:', error)
+    return {
+      compatibilityMatrix: [],
+      profileComparisons: [],
+      recommendations: [],
+      metadata: {
+        departmentCount: 0,
+        totalPairs: 0,
+        available: false,
+      },
+    }
+  }
+}
+

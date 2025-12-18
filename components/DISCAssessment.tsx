@@ -31,6 +31,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { generatePDFReport } from '@/lib/pdfGenerator'
+import {
+  classifyDrivingForces,
+  analyzeDISCIntegration,
+  getTeamDynamicsInsights,
+  getDevelopmentRecommendations,
+} from '@/lib/drivingForcesAnalysis'
 
 // Types
 type DISCType = 'D' | 'I' | 'S' | 'C'
@@ -123,6 +129,10 @@ interface DrivingForceDescription {
   traits: string[]
   color: string
   bgColor: string
+  examples?: string[]
+  workplaceScenarios?: string[]
+  strengths?: string[]
+  blindSpots?: string[]
 }
 
 interface MotivatorDescription {
@@ -137,6 +147,7 @@ interface Result {
   name: string
   email?: string
   dept: string
+  teamCode?: string
   natural: Scores
   adaptive: Scores
   primaryNatural: DISCType
@@ -417,6 +428,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Experience-based', 'Intuitive', 'Practical', 'Action-oriented'],
     color: '#7c3aed',
     bgColor: '#f3e8ff',
+    examples: [
+      'Trusting your gut feeling when making decisions',
+      'Drawing on similar past experiences to solve current problems',
+      'Learning through hands-on practice rather than theory',
+      'Making quick decisions based on accumulated wisdom',
+    ],
+    workplaceScenarios: [
+      'Leading a project similar to one you\'ve done before',
+      'Mentoring others based on your experience',
+      'Making rapid decisions in familiar situations',
+      'Troubleshooting issues using past knowledge',
+    ],
+    strengths: [
+      'Quick decision-making in familiar contexts',
+      'Practical problem-solving based on real experience',
+      'Reliable judgment in areas of expertise',
+      'Ability to act decisively without over-analysis',
+    ],
+    blindSpots: [
+      'May miss new approaches or innovative solutions',
+      'Could overlook important details if situation differs from past',
+      'May resist learning new methods if old ones worked',
+      'Risk of applying outdated solutions to new problems',
+    ],
   },
   KN: {
     name: 'Intellectual',
@@ -425,6 +460,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Curious', 'Analytical', 'Learning-focused', 'Truth-seeking'],
     color: '#6366f1',
     bgColor: '#eef2ff',
+    examples: [
+      'Reading extensively about topics that interest you',
+      'Asking probing questions to understand deeply',
+      'Seeking out training and educational opportunities',
+      'Enjoying research and discovery processes',
+    ],
+    workplaceScenarios: [
+      'Taking on projects that require learning new skills',
+      'Conducting research and analysis',
+      'Participating in training and development programs',
+      'Exploring innovative solutions through study',
+    ],
+    strengths: [
+      'Deep understanding of complex topics',
+      'Ability to synthesize information from multiple sources',
+      'Strong analytical and critical thinking skills',
+      'Natural curiosity drives continuous improvement',
+    ],
+    blindSpots: [
+      'May over-analyze and delay action',
+      'Could prioritize learning over practical application',
+      'May struggle with decisions when information is incomplete',
+      'Risk of analysis paralysis',
+    ],
   },
   US: {
     name: 'Selfless',
@@ -433,6 +492,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Altruistic', 'Service-oriented', 'Generous', 'Self-sacrificing'],
     color: '#059669',
     bgColor: '#d1fae5',
+    examples: [
+      'Helping colleagues without expecting anything in return',
+      'Volunteering for tasks that benefit the team',
+      'Putting others\' needs before your own',
+      'Finding satisfaction in contributing to a greater good',
+    ],
+    workplaceScenarios: [
+      'Supporting team members who are struggling',
+      'Taking on less desirable tasks for the team\'s benefit',
+      'Mentoring and developing others',
+      'Contributing to projects where you won\'t receive direct credit',
+    ],
+    strengths: [
+      'Builds strong relationships and trust',
+      'Creates positive team culture',
+      'Natural mentor and supporter',
+      'High level of commitment to collective success',
+    ],
+    blindSpots: [
+      'May neglect your own needs and career development',
+      'Could be taken advantage of by others',
+      'May struggle to advocate for yourself',
+      'Risk of burnout from over-giving',
+    ],
   },
   UR: {
     name: 'Resourceful',
@@ -441,6 +524,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Efficient', 'Results-driven', 'Pragmatic', 'ROI-focused'],
     color: '#0891b2',
     bgColor: '#cffafe',
+    examples: [
+      'Finding ways to accomplish more with less',
+      'Evaluating the return on investment before committing',
+      'Streamlining processes to increase efficiency',
+      'Focusing on outcomes that provide measurable value',
+    ],
+    workplaceScenarios: [
+      'Optimizing workflows and processes',
+      'Leading projects with clear ROI expectations',
+      'Making resource allocation decisions',
+      'Identifying and eliminating waste or inefficiency',
+    ],
+    strengths: [
+      'Excellent at maximizing resources and efficiency',
+      'Strong focus on practical outcomes',
+      'Ability to identify and eliminate waste',
+      'Results-oriented approach drives productivity',
+    ],
+    blindSpots: [
+      'May overlook human or relationship aspects',
+      'Could prioritize efficiency over quality',
+      'May struggle with tasks that don\'t have clear ROI',
+      'Risk of being perceived as transactional',
+    ],
   },
   SO: {
     name: 'Objective',
@@ -449,6 +556,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Functional', 'Practical', 'Systematic', 'Organized'],
     color: '#dc2626',
     bgColor: '#fee2e2',
+    examples: [
+      'Preferring organized, clutter-free workspaces',
+      'Valuing functionality over aesthetics',
+      'Creating systems and structures for efficiency',
+      'Focusing on what works rather than how it looks',
+    ],
+    workplaceScenarios: [
+      'Designing efficient office layouts',
+      'Organizing information and processes systematically',
+      'Creating functional workspaces',
+      'Implementing structured workflows',
+    ],
+    strengths: [
+      'Creates organized and efficient environments',
+      'Strong focus on functionality and practicality',
+      'Excellent at systems thinking',
+      'Reliable and consistent approach',
+    ],
+    blindSpots: [
+      'May overlook the importance of aesthetics and atmosphere',
+      'Could create environments that feel sterile or impersonal',
+      'May not consider emotional or subjective needs',
+      'Risk of being too rigid or inflexible',
+    ],
   },
   SH: {
     name: 'Harmonious',
@@ -457,6 +588,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Aesthetic', 'Balanced', 'Sensory-aware', 'Atmosphere-focused'],
     color: '#ea580c',
     bgColor: '#ffedd5',
+    examples: [
+      'Creating visually appealing and comfortable spaces',
+      'Paying attention to lighting, colors, and ambiance',
+      'Valuing balance and harmony in your environment',
+      'Being sensitive to the mood and energy of spaces',
+    ],
+    workplaceScenarios: [
+      'Designing welcoming and pleasant workspaces',
+      'Creating positive team atmospheres',
+      'Organizing events with attention to ambiance',
+      'Contributing to workplace culture and environment',
+    ],
+    strengths: [
+      'Creates pleasant and inspiring environments',
+      'Sensitive to atmosphere and mood',
+      'Strong aesthetic sense',
+      'Contributes to positive workplace culture',
+    ],
+    blindSpots: [
+      'May prioritize aesthetics over functionality',
+      'Could spend too much time on environment vs. work',
+      'May struggle in purely functional or sterile environments',
+      'Risk of being perceived as superficial',
+    ],
   },
   OI: {
     name: 'Intentional',
@@ -465,6 +620,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Purpose-driven', 'Goal-oriented', 'Strategic', 'Outcome-focused'],
     color: '#be185d',
     bgColor: '#fce7f3',
+    examples: [
+      'Helping others achieve specific goals or outcomes',
+      'Providing support that aligns with strategic objectives',
+      'Mentoring with clear purpose and direction',
+      'Assisting when it serves a larger purpose',
+    ],
+    workplaceScenarios: [
+      'Mentoring others toward specific career goals',
+      'Supporting team members to achieve project objectives',
+      'Providing strategic guidance and direction',
+      'Helping others develop skills needed for success',
+    ],
+    strengths: [
+      'Strategic approach to helping others',
+      'Clear focus on outcomes and results',
+      'Effective at goal-oriented support',
+      'Balances helping with achieving objectives',
+    ],
+    blindSpots: [
+      'May be perceived as transactional or conditional',
+      'Could miss opportunities to help without clear purpose',
+      'May struggle with purely emotional support',
+      'Risk of being seen as less genuine',
+    ],
   },
   OA: {
     name: 'Altruistic',
@@ -473,6 +652,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Caring', 'Empathetic', 'Supportive', 'People-focused'],
     color: '#c2410c',
     bgColor: '#fff7ed',
+    examples: [
+      'Genuinely caring about others\' wellbeing',
+      'Feeling fulfilled when you help others succeed',
+      'Naturally empathetic and understanding',
+      'Putting people\'s needs and feelings first',
+    ],
+    workplaceScenarios: [
+      'Supporting colleagues through difficult times',
+      'Creating inclusive and supportive team environments',
+      'Advocating for others\' needs and interests',
+      'Building strong relationships based on care',
+    ],
+    strengths: [
+      'Builds deep, meaningful relationships',
+      'Creates supportive and caring environments',
+      'High emotional intelligence',
+      'Natural ability to understand and help others',
+    ],
+    blindSpots: [
+      'May struggle with difficult decisions that affect people',
+      'Could have difficulty saying no or setting boundaries',
+      'May prioritize relationships over results',
+      'Risk of emotional exhaustion from caring too much',
+    ],
   },
   PC: {
     name: 'Collaborative',
@@ -481,6 +684,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Team-oriented', 'Supportive', 'Humble', 'Cooperative'],
     color: '#16a34a',
     bgColor: '#dcfce7',
+    examples: [
+      'Thriving in team environments where everyone contributes',
+      'Finding satisfaction in collective success',
+      'Supporting leaders and helping them succeed',
+      'Preferring shared recognition over individual accolades',
+    ],
+    workplaceScenarios: [
+      'Working effectively in collaborative teams',
+      'Supporting team leaders and contributing to group goals',
+      'Facilitating team success through cooperation',
+      'Contributing to projects without needing personal credit',
+    ],
+    strengths: [
+      'Excellent team player and collaborator',
+      'Builds strong team cohesion',
+      'Reliable and supportive team member',
+      'Creates positive team dynamics',
+    ],
+    blindSpots: [
+      'May struggle to take individual leadership roles',
+      'Could be overlooked for promotions or recognition',
+      'May avoid advocating for yourself',
+      'Risk of being taken for granted',
+    ],
   },
   PD: {
     name: 'Commanding',
@@ -489,6 +716,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Ambitious', 'Leadership-focused', 'Status-driven', 'Autonomous'],
     color: '#ca8a04',
     bgColor: '#fef9c3',
+    examples: [
+      'Seeking leadership roles and positions of influence',
+      'Valuing recognition and status symbols',
+      'Wanting control over your work and decisions',
+      'Striving for advancement and career growth',
+    ],
+    workplaceScenarios: [
+      'Leading projects and teams',
+      'Pursuing promotions and career advancement',
+      'Taking on high-visibility assignments',
+      'Building your professional reputation and status',
+    ],
+    strengths: [
+      'Natural leadership ability',
+      'Strong drive for achievement and success',
+      'Comfortable making decisions and taking charge',
+      'Ambitious and goal-oriented',
+    ],
+    blindSpots: [
+      'May struggle with collaborative or supporting roles',
+      'Could be perceived as overly competitive or self-focused',
+      'May have difficulty sharing credit or recognition',
+      'Risk of prioritizing status over team success',
+    ],
   },
   MR: {
     name: 'Receptive',
@@ -497,6 +748,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Innovative', 'Flexible', 'Open-minded', 'Change-embracing'],
     color: '#0284c7',
     bgColor: '#e0f2fe',
+    examples: [
+      'Embracing new technologies and approaches',
+      'Seeking out innovative solutions and methods',
+      'Adapting quickly to change',
+      'Exploring unconventional ideas and approaches',
+    ],
+    workplaceScenarios: [
+      'Leading innovation and change initiatives',
+      'Exploring new technologies and processes',
+      'Adapting to changing business needs',
+      'Championing new ideas and approaches',
+    ],
+    strengths: [
+      'Drives innovation and change',
+      'Adaptable and flexible approach',
+      'Open to new ideas and possibilities',
+      'Comfortable with uncertainty and ambiguity',
+    ],
+    blindSpots: [
+      'May struggle with established processes and systems',
+      'Could create instability with constant change',
+      'May overlook the value of proven methods',
+      'Risk of being perceived as unreliable or inconsistent',
+    ],
   },
   MS: {
     name: 'Structured',
@@ -505,6 +780,30 @@ const drivingForceDescriptions: Record<DrivingForceType, DrivingForceDescription
     traits: ['Systematic', 'Traditional', 'Consistent', 'Process-oriented'],
     color: '#1e40af',
     bgColor: '#dbeafe',
+    examples: [
+      'Following established processes and procedures',
+      'Valuing consistency and reliability',
+      'Preferring proven methods over experimentation',
+      'Creating and maintaining systems and structures',
+    ],
+    workplaceScenarios: [
+      'Maintaining and improving existing processes',
+      'Ensuring consistency and quality standards',
+      'Implementing structured workflows',
+      'Providing stability and reliability',
+    ],
+    strengths: [
+      'Provides stability and consistency',
+      'Reliable and predictable approach',
+      'Strong at maintaining quality standards',
+      'Excellent at process improvement',
+    ],
+    blindSpots: [
+      'May resist necessary change and innovation',
+      'Could be perceived as rigid or inflexible',
+      'May struggle with ambiguity or uncertainty',
+      'Risk of being left behind by innovation',
+    ],
   },
 }
 
@@ -619,6 +918,7 @@ export default function DISCAssessment() {
   const [employeeName, setEmployeeName] = useState('')
   const [employeeEmail, setEmployeeEmail] = useState('')
   const [employeeDept, setEmployeeDept] = useState('')
+  const [employeeTeamCode, setEmployeeTeamCode] = useState('')
   const [selectionPhase, setSelectionPhase] = useState<'most' | 'least'>('most')
   const [currentMostSelection, setCurrentMostSelection] = useState<DISCType | null>(null)
   const [scores, setScores] = useState<CalculatedScores | null>(null)
@@ -753,6 +1053,7 @@ export default function DISCAssessment() {
         name: employeeName,
         email: employeeEmail,
         dept: employeeDept,
+        teamCode: employeeTeamCode || undefined,
         ...scores,
         drivingForces: drivingForceResult,
         date: new Date().toISOString().split('T')[0],
@@ -772,6 +1073,7 @@ export default function DISCAssessment() {
             name: employeeName,
             email: employeeEmail,
             dept: employeeDept,
+            teamCode: employeeTeamCode,
             natural: scores.natural,
             adaptive: scores.adaptive,
             primaryNatural: scores.primaryNatural,
@@ -839,6 +1141,7 @@ export default function DISCAssessment() {
     setEmployeeName('')
     setEmployeeEmail('')
     setEmployeeDept('')
+    setEmployeeTeamCode('')
     setSelectionPhase('most')
     setCurrentMostSelection(null)
     setCurrentView('intro')
@@ -861,6 +1164,7 @@ export default function DISCAssessment() {
         name: employeeName,
         email: employeeEmail,
         dept: employeeDept,
+        teamCode: employeeTeamCode || undefined,
         ...scores,
         date: new Date().toISOString().split('T')[0],
       }
@@ -911,7 +1215,7 @@ export default function DISCAssessment() {
 
   // Intro Screen
   if (currentView === 'intro') {
-    const formValid = Boolean(employeeName && employeeEmail && employeeDept)
+    const formValid = Boolean(employeeName && employeeEmail && employeeDept && employeeTeamCode)
 
     return (
       <div className="min-h-screen bg-muted/20 py-10">
@@ -981,6 +1285,19 @@ export default function DISCAssessment() {
                         )}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="teamCode">Team Code <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="teamCode"
+                      type="text"
+                      value={employeeTeamCode}
+                      onChange={(e) => setEmployeeTeamCode(e.target.value.toUpperCase())}
+                      placeholder="DTG01"
+                      maxLength={20}
+                      required
+                    />
+                    <p className="text-xs text-slate-500">Enter your team code (e.g., DTG01)</p>
                   </div>
                 </div>
 
@@ -1658,6 +1975,427 @@ export default function DISCAssessment() {
                       )}
                     </div>
                   </div>
+
+                  {/* Force Intensity Classification */}
+                  {(() => {
+                    const classification = classifyDrivingForces(
+                      drivingForceScores!.scores,
+                      drivingForceDescriptions
+                    )
+                    const forceRankingData = [
+                      ...classification.primary.map(f => ({ ...f, category: 'Primary' })),
+                      ...classification.situational.map(f => ({ ...f, category: 'Situational' })),
+                      ...classification.indifferent.map(f => ({ ...f, category: 'Indifferent' })),
+                    ].sort((a, b) => b.score - a.score)
+
+                    return (
+                      <>
+                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 mb-8">
+                          <h3 className="font-semibold text-slate-800 mb-4 text-center text-lg">
+                            Force Intensity Classification
+                          </h3>
+                          <p className="text-sm text-slate-600 text-center mb-6">
+                            Your driving forces categorized by their influence on your behavior
+                          </p>
+
+                          <div className="grid md:grid-cols-3 gap-4 mb-6">
+                            {/* Primary Forces */}
+                            <div className="bg-white rounded-lg p-4 border-2 border-emerald-500">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                <h4 className="font-semibold text-emerald-700">Primary Forces</h4>
+                                <span className="ml-auto text-xs font-semibold text-emerald-600">
+                                  {classification.primary.length}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 mb-3">
+                                Most influential motivators (8-15 points) that consistently drive your behavior
+                              </p>
+                              <div className="space-y-2">
+                                {classification.primary.map((force) => (
+                                  <div key={force.type} className="flex items-center justify-between p-2 bg-emerald-50 rounded">
+                                    <div className="flex-1">
+                                      <div className="font-medium text-sm" style={{ color: force.description.color }}>
+                                        {force.description.name}
+                                      </div>
+                                      <div className="text-xs text-slate-600">{force.score} points</div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Situational Forces */}
+                            <div className="bg-white rounded-lg p-4 border-2 border-amber-500">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                                <h4 className="font-semibold text-amber-700">Situational Forces</h4>
+                                <span className="ml-auto text-xs font-semibold text-amber-600">
+                                  {classification.situational.length}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 mb-3">
+                                Context-dependent motivators (4-7 points) that emerge in specific situations
+                              </p>
+                              <div className="space-y-2">
+                                {classification.situational.length > 0 ? (
+                                  classification.situational.map((force) => (
+                                    <div key={force.type} className="flex items-center justify-between p-2 bg-amber-50 rounded">
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm" style={{ color: force.description.color }}>
+                                          {force.description.name}
+                                        </div>
+                                        <div className="text-xs text-slate-600">{force.score} points</div>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-xs text-slate-500 italic">None in this range</p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Indifferent Forces */}
+                            <div className="bg-white rounded-lg p-4 border-2 border-slate-300">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-3 h-3 rounded-full bg-slate-400"></div>
+                                <h4 className="font-semibold text-slate-700">Indifferent Forces</h4>
+                                <span className="ml-auto text-xs font-semibold text-slate-600">
+                                  {classification.indifferent.length}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-600 mb-3">
+                                Minimal impact motivators (0-3 points) that have little influence on your behavior
+                              </p>
+                              <div className="space-y-2">
+                                {classification.indifferent.length > 0 ? (
+                                  classification.indifferent.map((force) => (
+                                    <div key={force.type} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm text-slate-500">
+                                          {force.description.name}
+                                        </div>
+                                        <div className="text-xs text-slate-500">{force.score} points</div>
+                                      </div>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <p className="text-xs text-slate-500 italic">None in this range</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Force Ranking Chart */}
+                          <div className="bg-white rounded-lg p-4">
+                            <h4 className="font-semibold text-slate-800 mb-4 text-center">All Forces Ranked by Intensity</h4>
+                            <div className="space-y-2">
+                              {forceRankingData.map((entry, index) => {
+                                const fillColor =
+                                  entry.category === 'Primary'
+                                    ? '#10b981'
+                                    : entry.category === 'Situational'
+                                      ? '#f59e0b'
+                                      : '#94a3b8'
+                                return (
+                                  <div key={index} className="flex items-center gap-3">
+                                    <div className="w-32 text-xs font-medium text-slate-700">{entry.description.name}</div>
+                                    <div className="flex-1 h-6 bg-slate-200 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full transition-all"
+                                        style={{
+                                          width: `${(entry.score / 15) * 100}%`,
+                                          backgroundColor: fillColor,
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="w-12 text-right text-xs font-semibold">{entry.score}</div>
+                                    <div className="w-20 text-xs text-slate-500">{entry.category}</div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                            <div className="mt-4 flex justify-center gap-4 text-xs">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-emerald-500"></div>
+                                <span>Primary</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-amber-500"></div>
+                                <span>Situational</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded bg-slate-400"></div>
+                                <span>Indifferent</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* DISC Integration Insights */}
+                        {(() => {
+                          const primaryForceTypes = classification.primary.map(f => f.type)
+                          const discIntegration = analyzeDISCIntegration(
+                            scores.primaryNatural,
+                            primaryForceTypes,
+                            drivingForceDescriptions
+                          )
+
+                          return (
+                            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 mb-8">
+                              <h3 className="font-semibold text-slate-800 mb-4 text-lg">
+                                DISC & Driving Forces Integration
+                              </h3>
+                              <p className="text-sm text-slate-600 mb-4">
+                                How your {scores.primaryNatural} behavioral style aligns with your primary driving forces
+                              </p>
+
+                              <div className="mb-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span
+                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                      discIntegration.alignment === 'strong'
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : discIntegration.alignment === 'moderate'
+                                          ? 'bg-amber-100 text-amber-700'
+                                          : 'bg-red-100 text-red-700'
+                                    }`}
+                                  >
+                                    {discIntegration.alignment === 'strong'
+                                      ? 'Strong Alignment'
+                                      : discIntegration.alignment === 'moderate'
+                                        ? 'Moderate Alignment'
+                                        : 'Potential Tension'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3 mb-4">
+                                {discIntegration.insights.map((insight, idx) => (
+                                  <div key={idx} className="bg-white rounded-lg p-3 border-l-4 border-blue-500">
+                                    <p className="text-sm text-slate-700">{insight}</p>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="bg-white rounded-lg p-4">
+                                <h4 className="font-semibold text-slate-800 mb-2">Recommendations</h4>
+                                <ul className="space-y-2">
+                                  {discIntegration.recommendations.map((rec, idx) => (
+                                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                      <span className="text-blue-500 mt-1">•</span>
+                                      <span>{rec}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </div>
+                          )
+                        })()}
+
+                        {/* Team Dynamics */}
+                        {(() => {
+                          const primaryForceTypes = classification.primary.map(f => f.type)
+                          const teamDynamics = getTeamDynamicsInsights(primaryForceTypes, drivingForceDescriptions)
+
+                          return (
+                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 mb-8">
+                              <h3 className="font-semibold text-slate-800 mb-4 text-lg">Team Dynamics & Collaboration</h3>
+                              <p className="text-sm text-slate-600 mb-4">
+                                How your driving forces influence your collaboration style and team interactions
+                              </p>
+
+                              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-slate-800 mb-2">Collaboration Style</h4>
+                                  <p className="text-sm text-slate-700">{teamDynamics.collaborationStyle}</p>
+                                </div>
+
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-slate-800 mb-2">Communication Preferences</h4>
+                                  <ul className="space-y-1">
+                                    {Array.isArray(teamDynamics.communicationPreferences) ? (
+                                      teamDynamics.communicationPreferences.map((pref, idx) => (
+                                        <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                          <span className="text-green-500 mt-1">•</span>
+                                          <span>{pref}</span>
+                                        </li>
+                                      ))
+                                    ) : (
+                                      <li className="text-sm text-slate-700">{teamDynamics.communicationPreferences}</li>
+                                    )}
+                                  </ul>
+                                </div>
+                              </div>
+
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-slate-800 mb-2">Complementary Profiles</h4>
+                                  <ul className="space-y-1">
+                                    {Array.isArray(teamDynamics.complementaryProfiles) ? (
+                                      teamDynamics.complementaryProfiles.map((profile, idx) => (
+                                        <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                          <span className="text-emerald-500 mt-1">✓</span>
+                                          <span>{profile}</span>
+                                        </li>
+                                      ))
+                                    ) : (
+                                      <li className="text-sm text-slate-700">{teamDynamics.complementaryProfiles}</li>
+                                    )}
+                                  </ul>
+                                </div>
+
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-slate-800 mb-2">Potential Friction Points</h4>
+                                  <ul className="space-y-1">
+                                    {Array.isArray(teamDynamics.potentialFrictions) ? (
+                                      teamDynamics.potentialFrictions.map((friction, idx) => (
+                                        <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                          <span className="text-amber-500 mt-1">⚠</span>
+                                          <span>{friction}</span>
+                                        </li>
+                                      ))
+                                    ) : (
+                                      <li className="text-sm text-slate-700">{teamDynamics.potentialFrictions}</li>
+                                    )}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
+
+                        {/* Enhanced Descriptions with Examples */}
+                        <div className="bg-slate-50 rounded-xl p-6 mb-8">
+                          <h3 className="font-semibold text-slate-800 mb-4 text-lg">Detailed Force Descriptions</h3>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {classification.primary.map((force) => (
+                              <div key={force.type} className="bg-white rounded-lg p-4 border-l-4" style={{ borderColor: force.description.color }}>
+                                <div className="flex items-center gap-2 mb-3">
+                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: force.description.color }}></div>
+                                  <h4 className="font-semibold text-slate-800">{force.description.fullName}</h4>
+                                  <span className="ml-auto text-xs font-semibold" style={{ color: force.description.color }}>
+                                    {force.score} pts
+                                  </span>
+                                </div>
+                                <p className="text-sm text-slate-700 mb-3">{force.description.description}</p>
+
+                                {force.description.examples && force.description.examples.length > 0 && (
+                                  <div className="mb-3">
+                                    <div className="text-xs font-semibold text-slate-600 mb-1">Examples:</div>
+                                    <ul className="space-y-1">
+                                      {force.description.examples.slice(0, 2).map((example, idx) => (
+                                        <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
+                                          <span className="mt-1">•</span>
+                                          <span>{example}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  {force.description.strengths && force.description.strengths.length > 0 && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-emerald-700 mb-1">Strengths:</div>
+                                      <ul className="space-y-1">
+                                        {force.description.strengths.slice(0, 2).map((strength, idx) => (
+                                          <li key={idx} className="text-xs text-emerald-600 flex items-start gap-1">
+                                            <span>✓</span>
+                                            <span>{strength}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+
+                                  {force.description.blindSpots && force.description.blindSpots.length > 0 && (
+                                    <div>
+                                      <div className="text-xs font-semibold text-amber-700 mb-1">Watch for:</div>
+                                      <ul className="space-y-1">
+                                        {force.description.blindSpots.slice(0, 2).map((blindSpot, idx) => (
+                                          <li key={idx} className="text-xs text-amber-600 flex items-start gap-1">
+                                            <span>⚠</span>
+                                            <span>{blindSpot}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Development Recommendations */}
+                        {(() => {
+                          const devRecs = getDevelopmentRecommendations(classification)
+
+                          return (
+                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 mb-8">
+                              <h3 className="font-semibold text-slate-800 mb-4 text-lg">Development Recommendations</h3>
+                              <p className="text-sm text-slate-600 mb-4">
+                                Actionable strategies to leverage your driving forces for personal growth
+                              </p>
+
+                              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-emerald-700 mb-2">Leverage Primary Forces</h4>
+                                  <ul className="space-y-2">
+                                    {devRecs.leveragePrimary.map((rec, idx) => (
+                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                        <span className="text-emerald-500 mt-1">✓</span>
+                                        <span>{rec}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-amber-700 mb-2">Develop Situational Forces</h4>
+                                  <ul className="space-y-2">
+                                    {devRecs.developSituational.map((rec, idx) => (
+                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                        <span className="text-amber-500 mt-1">→</span>
+                                        <span>{rec}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-slate-700 mb-2">Work With Indifferent Forces</h4>
+                                  <ul className="space-y-2">
+                                    {devRecs.workWithIndifferent.map((rec, idx) => (
+                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                        <span className="text-slate-400 mt-1">•</span>
+                                        <span>{rec}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+
+                                <div className="bg-white rounded-lg p-4">
+                                  <h4 className="font-semibold text-blue-700 mb-2">Personal Development Goals</h4>
+                                  <ul className="space-y-2">
+                                    {devRecs.personalGoals.map((goal, idx) => (
+                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
+                                        <span className="text-blue-500 mt-1">🎯</span>
+                                        <span>{goal}</span>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </>
+                    )
+                  })()}
 
                   {/* Driving Forces Insights */}
                   <div className="space-y-4 mb-8">

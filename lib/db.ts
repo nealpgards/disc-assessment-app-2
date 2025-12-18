@@ -26,6 +26,7 @@ try {
         name TEXT NOT NULL,
         email TEXT,
         department TEXT NOT NULL,
+        team_code TEXT,
         natural_D INTEGER NOT NULL,
         natural_I INTEGER NOT NULL,
         natural_S INTEGER NOT NULL,
@@ -41,8 +42,16 @@ try {
       );
 
       CREATE INDEX IF NOT EXISTS idx_department ON results(department);
+      CREATE INDEX IF NOT EXISTS idx_team_code ON results(team_code);
       CREATE INDEX IF NOT EXISTS idx_created_at ON results(created_at);
     `)
+    
+    // Add team_code column if it doesn't exist (for existing databases)
+    try {
+      db.exec(`ALTER TABLE results ADD COLUMN team_code TEXT;`)
+    } catch (error) {
+      // Column already exists, ignore error
+    }
   }
 
   // Initialize on first load
@@ -58,6 +67,7 @@ export interface ResultRow {
   name: string
   email: string | null
   department: string
+  team_code: string | null
   natural_D: number
   natural_I: number
   natural_S: number
