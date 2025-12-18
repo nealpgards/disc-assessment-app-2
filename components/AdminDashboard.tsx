@@ -1124,7 +1124,8 @@ export default function AdminDashboard() {
                                   <span
                                     className="px-3 py-1 rounded text-white text-sm font-bold"
                                     style={{
-                                      backgroundColor: profileDescriptions[comp.comparison.natural.primaryType1].color,
+                                      backgroundColor:
+                                        profileDescriptions[comp.comparison.natural.primaryType1 as DISCType].color,
                                     }}
                                   >
                                     {comp.comparison.natural.primaryType1}
@@ -1133,7 +1134,8 @@ export default function AdminDashboard() {
                                   <span
                                     className="px-3 py-1 rounded text-white text-sm font-bold"
                                     style={{
-                                      backgroundColor: profileDescriptions[comp.comparison.natural.primaryType2].color,
+                                      backgroundColor:
+                                        profileDescriptions[comp.comparison.natural.primaryType2 as DISCType].color,
                                     }}
                                   >
                                     {comp.comparison.natural.primaryType2}
