@@ -1675,13 +1675,6 @@ export default function DISCAssessment() {
                   </span>
                 </div>
               )}
-              {saveStatus === 'error' && saveError && (
-                <div className="mt-4">
-                  <span className="px-3 py-1 text-xs font-semibold rounded-full bg-red-50 text-red-700 border border-red-200">
-                    ⚠ {saveError}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Primary Types */}
