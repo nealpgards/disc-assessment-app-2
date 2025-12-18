@@ -46,6 +46,14 @@ interface ProfileDescription {
   growth: string
 }
 
+interface CommunicationGuide {
+  styleLabel: string
+  howToCommunicate: string[]
+  howNotToCommunicate: string[]
+  selfPerception: string[]
+  othersPerception: string[]
+}
+
 const profileDescriptions: Record<DISCType, ProfileDescription> = {
   D: {
     name: 'Dominance',
@@ -94,6 +102,93 @@ const profileDescriptions: Record<DISCType, ProfileDescription> = {
       'Under stress, may become overly critical, perfectionistic, or withdrawn. May over-analyze and delay decisions.',
     stressResponse: 'Becomes more critical and withdrawn',
     growth: 'Accept imperfection, make faster decisions, share concerns openly',
+  },
+}
+
+const communicationGuides: Record<DISCType, CommunicationGuide> = {
+  D: {
+    styleLabel: 'Direct, fast-paced, and results-focused communicator',
+    howToCommunicate: [
+      'Lead with the bottom line or decision needed, then add only the most relevant context.',
+      'Be clear about goals, ownership, and timelines – focus on outcomes more than process.',
+      'Offer options and autonomy rather than prescribing every detail.',
+    ],
+    howNotToCommunicate: [
+      'Do not bury key points in long stories or excessive background.',
+      'Avoid vague expectations, indecisive language, or constant revisiting of decisions.',
+      'Do not take their direct questions personally or respond with defensiveness.',
+    ],
+    selfPerception: [
+      'Sees self as confident, decisive, and efficient at getting things done.',
+      'Believes that directness and speed help the team move forward.',
+    ],
+    othersPerception: [
+      'Others may see them as impatient, demanding, or overly blunt when under pressure.',
+      'Some may hesitate to push back or share concerns if they feel rushed or dismissed.',
+    ],
+  },
+  I: {
+    styleLabel: 'Enthusiastic, relational, and expressive communicator',
+    howToCommunicate: [
+      'Start with connection – be warm, positive, and conversational.',
+      'Explain the vision, impact, and “why” behind decisions, not just the facts.',
+      'Invite dialogue, questions, and brainstorming to keep them engaged.',
+    ],
+    howNotToCommunicate: [
+      'Do not be overly formal, distant, or purely transactional.',
+      'Avoid shutting down ideas too quickly or focusing only on problems.',
+      'Do not rely only on one-way communication for important topics.',
+    ],
+    selfPerception: [
+      'Sees self as friendly, encouraging, and good at building relationships.',
+      'Believes their optimism and energy make work more enjoyable for others.',
+    ],
+    othersPerception: [
+      'Others may see them as scattered, overly talkative, or light on follow-through at times.',
+      'Some may feel commitments are made enthusiastically but not always completed.',
+    ],
+  },
+  S: {
+    styleLabel: 'Calm, steady, and supportive communicator',
+    howToCommunicate: [
+      'Provide clear expectations and allow time to process before expecting a response.',
+      'Explain how changes will affect people, routines, and stability.',
+      'Invite their perspective in a low-pressure way and show appreciation for their support.',
+    ],
+    howNotToCommunicate: [
+      'Do not surprise them with last-minute changes or abrupt confrontations.',
+      'Avoid aggressive, high-pressure tactics or rapid-fire decisions with no input.',
+      'Do not minimize their concerns about team harmony or workload.',
+    ],
+    selfPerception: [
+      'Sees self as loyal, dependable, and a calming presence on the team.',
+      'Believes their patience and consistency help others feel safe and supported.',
+    ],
+    othersPerception: [
+      'Others may see them as resistant to change, quiet, or slow to decide.',
+      'Some may underestimate their opinions because they do not always speak first.',
+    ],
+  },
+  C: {
+    styleLabel: 'Thoughtful, precise, and data-driven communicator',
+    howToCommunicate: [
+      'Come prepared with data, structure, and clear reasoning.',
+      'Be specific about expectations, definitions, and quality standards.',
+      'Give time for questions and analysis before requiring a firm decision.',
+    ],
+    howNotToCommunicate: [
+      'Do not be vague, inconsistent, or dismissive of details and risks.',
+      'Avoid pressuring for instant decisions without enough information.',
+      'Do not take their critical questions as personal attacks – they are seeking clarity.',
+    ],
+    selfPerception: [
+      'Sees self as careful, thorough, and committed to doing things right.',
+      'Believes their questions and critique protect quality and reduce risk.',
+    ],
+    othersPerception: [
+      'Others may see them as overly critical, slow, or rigid when standards feel very high.',
+      'Some may feel anxious about “being wrong” in front of them because of their precision.',
+    ],
   },
 }
 
@@ -196,8 +291,10 @@ export async function generatePDFReport(
   const adaptiveProfile = profileDescriptions[scores.primaryAdaptive]
   const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
 
-  // Calculate total pages
-  const totalPages = result.drivingForces ? 10 : 7
+  const hasDrivingForces = !!result.drivingForces
+
+  // Base page count (may slightly undercount if content flows onto extra pages)
+  const totalPages = hasDrivingForces ? 9 : 8
 
   // ========== PAGE 1: COVER PAGE ==========
   doc.setFillColor(248, 250, 252) // slate-50
@@ -623,7 +720,126 @@ export async function generatePDFReport(
   addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
-  // ========== PAGE 7: UNDERSTANDING YOUR SCORES & NEXT STEPS ==========
+  // ========== PAGE 7: COMMUNICATION PREFERENCES ==========
+  doc.addPage()
+  yPos = margin
+  addHeader(doc, 'How to Communicate With You')
+
+  yPos = 40
+  const commGuide = communicationGuides[scores.primaryNatural]
+
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  yPos = addWrappedText(
+    doc,
+    `These guidelines are based primarily on your Natural style (${scores.primaryNatural} – ${naturalProfile.name}). Share this page with your manager and teammates to help them communicate with you more effectively.`,
+    margin,
+    yPos,
+    contentWidth,
+    7,
+    11
+  ) + 6
+
+  // How to communicate
+  doc.setFillColor(248, 250, 252) // slate-50
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F')
+  doc.setDrawColor(22, 163, 74) // emerald-600
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'S')
+  yPos += 8
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(22, 163, 74)
+  doc.text('Do this when communicating with you', margin + 5, yPos)
+  yPos += 8
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  commGuide.howToCommunicate.forEach((tip) => {
+    yPos = addWrappedText(doc, `• ${tip}`, margin + 7, yPos, contentWidth - 12, 5, 9) + 1
+  })
+  yPos += 4
+
+  // How not to communicate
+  if (yPos > pageHeight - 60) {
+    addPageNumber(doc, currentPage, totalPages)
+    currentPage++
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'How to Communicate With You (cont.)')
+    yPos = 40
+  }
+
+  doc.setFillColor(254, 242, 242) // red-50
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F')
+  doc.setDrawColor(239, 68, 68) // red-500
+  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'S')
+  yPos += 8
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(185, 28, 28)
+  doc.text('Avoid this when communicating with you', margin + 5, yPos)
+  yPos += 8
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  commGuide.howNotToCommunicate.forEach((tip) => {
+    yPos = addWrappedText(doc, `• ${tip}`, margin + 7, yPos, contentWidth - 12, 5, 9) + 1
+  })
+  yPos += 4
+
+  // Self vs others perception
+  if (yPos > pageHeight - 60) {
+    addPageNumber(doc, currentPage, totalPages)
+    currentPage++
+    doc.addPage()
+    yPos = margin
+    addHeader(doc, 'How to Communicate With You (cont.)')
+    yPos = 40
+  }
+
+  const columnWidth = (contentWidth - 10) / 2
+  const leftX = margin
+  const rightX = margin + columnWidth + 10
+
+  // Self-perception column
+  doc.setFillColor(239, 246, 255) // blue-50
+  doc.roundedRect(leftX, yPos, columnWidth, 40, 3, 3, 'F')
+  doc.setDrawColor(37, 99, 235) // blue-600
+  doc.roundedRect(leftX, yPos, columnWidth, 40, 3, 3, 'S')
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(37, 99, 235)
+  doc.text('How you likely see yourself', leftX + 4, yPos + 8)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  let innerY = yPos + 13
+  commGuide.selfPerception.forEach((item) => {
+    innerY = addWrappedText(doc, `• ${item}`, leftX + 5, innerY, columnWidth - 8, 5, 9) + 1
+  })
+
+  // Others-perception column
+  doc.setFillColor(248, 250, 252) // slate-50
+  doc.roundedRect(rightX, yPos, columnWidth, 40, 3, 3, 'F')
+  doc.setDrawColor(148, 163, 184) // slate-400
+  doc.roundedRect(rightX, yPos, columnWidth, 40, 3, 3, 'S')
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(71, 85, 105)
+  doc.text('How others may see you', rightX + 4, yPos + 8)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  innerY = yPos + 13
+  commGuide.othersPerception.forEach((item) => {
+    innerY = addWrappedText(doc, `• ${item}`, rightX + 5, innerY, columnWidth - 8, 5, 9) + 1
+  })
+
+  addPageNumber(doc, currentPage, totalPages)
+  currentPage++
+
+  // ========== PAGE 8: UNDERSTANDING YOUR SCORES & NEXT STEPS ==========
   doc.addPage()
   yPos = margin
   addHeader(doc, 'Understanding Your Scores & Next Steps')
@@ -696,17 +912,90 @@ The percentages indicate the relative strength of each DISC dimension in your pr
   addPageNumber(doc, currentPage, totalPages)
   currentPage++
 
-  // ========== DRIVING FORCES SECTIONS (if available) ==========
-  if (result.drivingForces) {
-    // We need the driving force descriptions - these should be passed or imported
-    // For now, we'll create a simplified version
-    const drivingForceDescriptions: Record<string, any> = {} // This would need to be passed in or imported
+  // ========== DRIVING FORCES SECTION (if available) ==========
+  if (hasDrivingForces && result.drivingForces) {
+    const dfScores = result.drivingForces.scores || {}
 
-    // Skip if we don't have descriptions (they're in the component)
-    // In a real implementation, these would be passed as a parameter or imported
-    
-    // For now, we'll add a basic driving forces page
-    // PAGE 8: Driving Forces Overview
+    type PairConfig = {
+      motivator: string
+      centerLabel: string
+      leftCode: string
+      rightCode: string
+      leftLabel: string
+      rightLabel: string
+      color: string
+      description: string
+    }
+
+    const drivingForcePairs: PairConfig[] = [
+      {
+        motivator: 'Knowledge',
+        centerLabel: 'Theoretical',
+        leftCode: 'KI',
+        rightCode: 'KN',
+        leftLabel: 'Instinctive',
+        rightLabel: 'Intellectual',
+        color: '#b91c1c',
+        description:
+          'Instinctive relies on past experience and gut feel, while Intellectual is energized by learning, research, and theory.',
+      },
+      {
+        motivator: 'Utility',
+        centerLabel: 'Utilitarian',
+        leftCode: 'US',
+        rightCode: 'UR',
+        leftLabel: 'Selfless',
+        rightLabel: 'Resourceful',
+        color: '#b45309',
+        description:
+          'Selfless is motivated by helping and completing tasks regardless of personal return, while Resourceful looks for efficiency and strong ROI.',
+      },
+      {
+        motivator: 'Surroundings',
+        centerLabel: 'Aesthetic',
+        leftCode: 'SO',
+        rightCode: 'SH',
+        leftLabel: 'Objective',
+        rightLabel: 'Harmonious',
+        color: '#7e22ce',
+        description:
+          'Objective cares most about function and practicality, while Harmonious values beauty, balance, and how the environment feels.',
+      },
+      {
+        motivator: 'Others',
+        centerLabel: 'Social',
+        leftCode: 'OI',
+        rightCode: 'OA',
+        leftLabel: 'Intentional',
+        rightLabel: 'Altruistic',
+        color: '#047857',
+        description:
+          'Intentional helps others to achieve specific outcomes, while Altruistic is driven to support people simply because they care.',
+      },
+      {
+        motivator: 'Power',
+        centerLabel: 'Individualistic',
+        leftCode: 'PC',
+        rightCode: 'PD',
+        leftLabel: 'Collaborative',
+        rightLabel: 'Commanding',
+        color: '#111827',
+        description:
+          'Collaborative prefers shared influence and supporting the team, while Commanding seeks autonomy, status, and clear authority.',
+      },
+      {
+        motivator: 'Methodologies',
+        centerLabel: 'Traditional',
+        leftCode: 'MR',
+        rightCode: 'MS',
+        leftLabel: 'Receptive',
+        rightLabel: 'Structured',
+        color: '#4b5563',
+        description:
+          'Receptive embraces new ideas and flexible approaches, while Structured prefers proven systems, traditions, and consistency.',
+      },
+    ]
+
     doc.addPage()
     yPos = margin
     addHeader(doc, 'Your Driving Forces Profile')
@@ -717,120 +1006,132 @@ The percentages indicate the relative strength of each DISC dimension in your pr
     doc.setTextColor(51, 65, 85)
     yPos = addWrappedText(
       doc,
-      'Your driving forces reveal what motivates you and drives your decisions. Understanding these motivators helps you align your work and goals with what truly energizes you.',
+      'These six scales show how strongly you lean toward each side of the core motivators that influence your decisions and priorities.',
       margin,
       yPos,
       contentWidth,
       7,
       11
-    ) + 10
+    ) + 8
 
-    // Primary Forces Summary
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(30, 41, 59)
-    doc.text('Primary Driving Forces by Motivator', margin, yPos)
-    yPos += 15
+    const trackLeft = margin + 40
+    const trackRight = pageWidth - margin - 40
+    const trackWidth = trackRight - trackLeft
 
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(51, 65, 85)
-    
-    const motivators = ['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies']
-    const drivingForces = result.drivingForces!
-    motivators.forEach((motivator) => {
+    drivingForcePairs.forEach((pair) => {
       if (yPos > pageHeight - 30) {
-        doc.addPage()
+        addPageNumber(doc, currentPage, totalPages)
         currentPage++
-        yPos = margin + 20
+        doc.addPage()
+        yPos = margin
+        addHeader(doc, 'Your Driving Forces Profile (cont.)')
+        yPos = 40
       }
-      const primaryType = drivingForces.primaryForces[motivator]
-      const score = drivingForces.scores[primaryType] || 0
-      doc.text(`${motivator}: ${primaryType} (${score} points)`, margin + 5, yPos)
-      yPos += 8
+
+      const leftRaw = Number(dfScores[pair.leftCode] || 0)
+      const rightRaw = Number(dfScores[pair.rightCode] || 0)
+      const total = leftRaw + rightRaw
+
+      let leftPct = 50
+      let rightPct = 50
+
+      if (total > 0) {
+        leftPct = Math.round((leftRaw / total) * 100)
+        rightPct = 100 - leftPct
+      }
+
+      const indicatorPosition = trackLeft + (rightPct / 100) * trackWidth
+
+      const [r, g, b] = hexToRgb(pair.color)
+
+      // Row header
+      doc.setFontSize(9)
+      doc.setTextColor(100, 116, 139)
+      doc.text(pair.motivator, margin, yPos)
+      doc.text(pair.centerLabel, pageWidth / 2, yPos, { align: 'center' })
+
+      const rowCenterY = yPos + 8
+
+      // Base track
+      doc.setDrawColor(226, 232, 240)
+      doc.setLineWidth(1)
+      doc.line(trackLeft, rowCenterY, trackRight, rowCenterY)
+
+      // Filled segment
+      doc.setDrawColor(r, g, b)
+      doc.setLineWidth(2.5)
+      doc.line(trackLeft, rowCenterY, indicatorPosition, rowCenterY)
+
+      // Ticks at 0/25/50/75/100
+      doc.setDrawColor(209, 213, 219)
+      doc.setLineWidth(0.5)
+      ;[0, 25, 50, 75, 100].forEach((v) => {
+        const x = trackLeft + (v / 100) * trackWidth
+        doc.line(x, rowCenterY - 2, x, rowCenterY + 2)
+      })
+
+      // Indicator knob
+      doc.setFillColor(r, g, b)
+      doc.setDrawColor(255, 255, 255)
+      doc.circle(indicatorPosition, rowCenterY, 2.5, 'FD')
+
+      // Left circle
+      const leftCircleX = margin + 15
+      doc.setFillColor(r, g, b)
+      doc.setDrawColor(r, g, b)
+      doc.circle(leftCircleX, rowCenterY, 6, 'FD')
+      doc.setFontSize(8)
+      doc.setTextColor(255, 255, 255)
+      doc.text(String(leftPct), leftCircleX, rowCenterY + 2, { align: 'center' })
+
+      // Right circle
+      const rightCircleX = pageWidth - margin - 15
+      doc.setFillColor(r, g, b)
+      doc.setDrawColor(r, g, b)
+      doc.circle(rightCircleX, rowCenterY, 6, 'FD')
+      doc.text(String(rightPct), rightCircleX, rowCenterY + 2, { align: 'center' })
+
+      // Labels under circles
+      doc.setFontSize(8)
+      doc.setTextColor(55, 65, 81)
+      doc.text(pair.leftLabel, leftCircleX, rowCenterY + 11, { align: 'center' })
+      doc.text(pair.rightLabel, rightCircleX, rowCenterY + 11, { align: 'center' })
+
+      yPos += 20
     })
 
-    addPageNumber(doc, currentPage, totalPages)
-    currentPage++
+    yPos += 6
 
-    // PAGE 9: DISC Integration (if we can calculate it)
-    // Note: This would require passing additional data or calculating here
-    // For now, we'll add a placeholder note
-    doc.addPage()
-    yPos = margin
-    addHeader(doc, 'DISC & Driving Forces Integration')
-
-    yPos = 40
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(51, 65, 85)
-    yPos = addWrappedText(
-      doc,
-      `Your ${scores.primaryNatural} behavioral style interacts with your driving forces in unique ways. Understanding this integration helps you leverage both your natural behavior and your core motivations for maximum effectiveness.`,
-      margin,
-      yPos,
-      contentWidth,
-      7,
-      11
-    ) + 15
+    if (yPos > pageHeight - 40) {
+      addPageNumber(doc, currentPage, totalPages)
+      currentPage++
+      doc.addPage()
+      yPos = margin
+      addHeader(doc, 'Your Driving Forces Profile (cont.)')
+      yPos = 40
+    }
 
     doc.setFontSize(10)
-    doc.setTextColor(71, 85, 105)
-    doc.text(
-      'For detailed integration analysis, please refer to your online results dashboard.',
-      margin,
-      yPos
-    )
-
-    addPageNumber(doc, currentPage, totalPages)
-    currentPage++
-
-    // PAGE 10: Development Recommendations
-    doc.addPage()
-    yPos = margin
-    addHeader(doc, 'Development Recommendations')
-
-    yPos = 40
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(51, 65, 85)
-    yPos = addWrappedText(
-      doc,
-      'Use these recommendations to leverage your driving forces for personal and professional growth.',
-      margin,
-      yPos,
-      contentWidth,
-      7,
-      11
-    ) + 10
-
-    doc.setFontSize(12)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(30, 41, 59)
-    doc.text('Key Recommendations', margin, yPos)
-    yPos += 10
+    doc.text('What each scale means', margin, yPos)
+    yPos += 8
 
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(51, 65, 85)
+    doc.setTextColor(71, 85, 105)
 
-    const recommendations = [
-      'Focus on opportunities that align with your primary driving forces',
-      'Be aware of situational forces that emerge in specific contexts',
-      'Recognize that indifferent forces have minimal impact on your motivation',
-      'Integrate your DISC behavioral style with your driving forces for maximum effectiveness',
-      'Regularly reflect on how your motivators align with your current activities',
-      'Seek roles and projects that naturally engage your primary forces',
-    ]
-
-    recommendations.forEach((rec, index) => {
+    drivingForcePairs.forEach((pair) => {
+      const text = `${pair.leftLabel} → ${pair.rightLabel}: ${pair.description}`
+      yPos = addWrappedText(doc, text, margin, yPos, contentWidth, 5, 9) + 2
       if (yPos > pageHeight - 30) {
-        doc.addPage()
+        addPageNumber(doc, currentPage, totalPages)
         currentPage++
-        yPos = margin + 20
+        doc.addPage()
+        yPos = margin
+        addHeader(doc, 'Your Driving Forces Profile (cont.)')
+        yPos = 40
       }
-      doc.text(`${index + 1}. ${rec}`, margin + 5, yPos)
-      yPos += 8
     })
 
     addPageNumber(doc, currentPage, totalPages)
@@ -1574,6 +1875,26 @@ export async function generateAdminDashboardPDF(
     if (insights.communicationInsights.length > 0) {
       checkNewPage(30)
       addHeader('Communication Style Insights')
+      yPos += 5
+
+      // Team-wide communication style snapshot based on Natural styles
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(30, 41, 59)
+      doc.text('Team Communication Preferences (Natural Styles)', margin, yPos)
+      yPos += 7
+
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(51, 65, 85)
+      dashboardData.teamNaturalDist.forEach((item) => {
+        const guide = communicationGuides[item.name as DISCType]
+        const line = `${item.name} - ${profileDescriptions[item.name as DISCType].name} (${item.natural} people): ${guide.styleLabel}`
+        const lines = doc.splitTextToSize(line, contentWidth)
+        doc.text(lines, margin + 5, yPos)
+        yPos += lines.length * 4.5 + 2
+      })
+
       yPos += 5
 
       insights.communicationInsights.forEach((insight) => {

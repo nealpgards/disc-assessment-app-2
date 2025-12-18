@@ -11,11 +11,13 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  Cell,
 } from 'recharts'
 import { Download, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { generateAdminDashboardPDF } from '@/lib/pdfGenerator'
+import DrivingForcesChart from '@/components/DrivingForcesChart'
 
 // Types
 type DISCType = 'D' | 'I' | 'S' | 'C'
@@ -81,6 +83,12 @@ interface DrivingForceDescription {
   bgColor: string
 }
 
+interface CommunicationGuide {
+  styleLabel: string
+  howToCommunicate: string[]
+  howNotToCommunicate: string[]
+}
+
 const profileDescriptions: Record<DISCType, ProfileDescription> = {
   D: {
     name: 'Dominance',
@@ -129,6 +137,61 @@ const profileDescriptions: Record<DISCType, ProfileDescription> = {
       'Under stress, may become overly critical, perfectionistic, or withdrawn. May over-analyze and delay decisions.',
     stressResponse: 'Becomes more critical and withdrawn',
     growth: 'Accept imperfection, make faster decisions, share concerns openly',
+  },
+}
+
+const communicationGuides: Record<DISCType, CommunicationGuide> = {
+  D: {
+    styleLabel: 'Direct, fast-paced, and results-focused',
+    howToCommunicate: [
+      'Lead with the bottom line, key decision, or outcome needed.',
+      'Keep communication brief, clear, and focused on results and ownership.',
+      'Provide options and autonomy rather than prescribing every step.',
+    ],
+    howNotToCommunicate: [
+      'Avoid long, unfocused discussions with no clear decision.',
+      'Do not be vague or indecisive about priorities and accountability.',
+      'Avoid taking their directness personally or responding emotionally.',
+    ],
+  },
+  I: {
+    styleLabel: 'Enthusiastic, relational, and expressive',
+    howToCommunicate: [
+      'Start with connection and context before diving into details.',
+      'Use collaborative discussions, stories, and examples.',
+      'Offer recognition, encouragement, and visible enthusiasm.',
+    ],
+    howNotToCommunicate: [
+      'Avoid overly formal, purely transactional communication.',
+      'Do not shut down ideas too quickly without acknowledging them.',
+      'Avoid isolating them with only one-way, written updates for important topics.',
+    ],
+  },
+  S: {
+    styleLabel: 'Calm, steady, and supportive',
+    howToCommunicate: [
+      'Provide clear expectations and allow time to process and respond.',
+      'Explain how decisions will impact people, routines, and stability.',
+      'Invite their input in a safe, low-pressure way.',
+    ],
+    howNotToCommunicate: [
+      'Avoid last-minute changes and surprise demands.',
+      'Do not use aggressive, confrontational, or high-pressure tactics.',
+      'Avoid dismissing concerns about team morale or harmony.',
+    ],
+  },
+  C: {
+    styleLabel: 'Precise, thoughtful, and data-driven',
+    howToCommunicate: [
+      'Come prepared with data, structure, and clear reasoning.',
+      'Give time for questions, analysis, and clarification.',
+      'Be specific about standards, definitions, and processes.',
+    ],
+    howNotToCommunicate: [
+      'Avoid vague requests, shifting expectations, or missing details.',
+      'Do not pressure for instant decisions without sufficient information.',
+      'Avoid taking their questions as criticism – they are seeking clarity.',
+    ],
   },
 }
 
@@ -472,6 +535,19 @@ export default function AdminDashboard() {
   const shifters = allResults.filter((r) => r.primaryNatural !== r.primaryAdaptive)
   const departmentCollaboration = insights?.departmentCollaboration
 
+  const hasDrivingForces = allResults.some((r) => r.drivingForces)
+  const aggregatedDrivingForcesScores = hasDrivingForces
+    ? allResults
+        .filter((r) => r.drivingForces && r.drivingForces.scores)
+        .reduce<Record<string, number>>((acc, result) => {
+          const scores = result.drivingForces!.scores
+          Object.entries(scores).forEach(([key, value]) => {
+            acc[key] = (acc[key] || 0) + (value || 0)
+          })
+          return acc
+        }, {})
+    : null
+
   if (allResults.length === 0 && !loadingResults) {
     return (
       <div className="min-h-screen bg-muted/20 py-10">
@@ -715,6 +791,81 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Team Communication Styles */}
+          <div className="bg-slate-50 rounded-xl p-6 mb-8">
+            <h3 className="font-semibold text-slate-800 mb-2">How Your Team Likes to Communicate</h3>
+            <p className="text-slate-600 text-sm mb-4">
+              Based on each person&apos;s Natural DISC style. Use this view to tailor meetings, feedback, and messaging.
+            </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart
+                    data={(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => ({
+                      type,
+                      label: communicationGuides[type].styleLabel,
+                      count: allResults.filter((r) => r.primaryNatural === type).length,
+                      fill: profileDescriptions[type].color,
+                    }))}
+                    barGap={6}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="type" />
+                    <YAxis allowDecimals={false} />
+                    <Tooltip
+                      formatter={(value, _name, props) => [
+                        value,
+                        (props && 'label' in props.payload ? props.payload.label : 'Style') as string,
+                      ]}
+                    />
+                    <Bar dataKey="count" name="People" radius={[4, 4, 0, 0]}>
+                      {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
+                        <Cell key={type} fill={profileDescriptions[type].color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => {
+                  const count = allResults.filter((r) => r.primaryNatural === type).length
+                  const guide = communicationGuides[type]
+                  return (
+                    <div key={type} className="bg-white rounded-lg p-3 border border-slate-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold text-white"
+                            style={{ backgroundColor: profileDescriptions[type].color }}
+                          >
+                            {type}
+                          </span>
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">
+                              {profileDescriptions[type].name}
+                            </p>
+                            <p className="text-xs text-slate-500">{guide.styleLabel}</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-600">
+                          {count} {count === 1 ? 'person' : 'people'}
+                        </span>
+                      </div>
+                      <ul className="mt-1 space-y-1 text-xs text-slate-600">
+                        {guide.howToCommunicate.slice(0, 2).map((tip, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5">
+                            <span className="mt-[2px] text-emerald-500">✓</span>
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
           {/* All Results Table */}
           <div className="bg-slate-50 rounded-xl p-6 mb-8">
             <h3 className="font-semibold text-slate-800 mb-4">All Employee Results</h3>
@@ -801,111 +952,21 @@ export default function AdminDashboard() {
           </div>
 
           {/* Driving Forces Analytics */}
-          {allResults.some((r) => r.drivingForces) && (
-            <>
-              <div className="border-t-2 border-slate-200 pt-8 mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-6">Driving Forces Analytics</h2>
-
-                {/* Driving Forces Distribution */}
-                <div className="bg-slate-50 rounded-xl p-6 mb-8">
-                  <h3 className="font-semibold text-slate-800 mb-4">Primary Driving Forces Distribution</h3>
-                  <div className="grid md:grid-cols-2 gap-6">
-                    {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                      (motivator) => {
-                        const resultsWithDF = allResults.filter((r) => r.drivingForces)
-                        const distribution = {
-                          option1: 0,
-                          option2: 0,
-                        }
-                        resultsWithDF.forEach((r) => {
-                          const primary = r.drivingForces!.primaryForces[motivator]
-                          if (
-                            (motivator === 'Knowledge' && primary === 'KI') ||
-                            (motivator === 'Utility' && primary === 'US') ||
-                            (motivator === 'Surroundings' && primary === 'SO') ||
-                            (motivator === 'Others' && primary === 'OI') ||
-                            (motivator === 'Power' && primary === 'PC') ||
-                            (motivator === 'Methodologies' && primary === 'MR')
-                          ) {
-                            distribution.option1++
-                          } else {
-                            distribution.option2++
-                          }
-                        })
-                        const option1Type =
-                          motivator === 'Knowledge'
-                            ? 'KI'
-                            : motivator === 'Utility'
-                              ? 'US'
-                              : motivator === 'Surroundings'
-                                ? 'SO'
-                                : motivator === 'Others'
-                                  ? 'OI'
-                                  : motivator === 'Power'
-                                    ? 'PC'
-                                    : 'MR'
-                        const option2Type =
-                          motivator === 'Knowledge'
-                            ? 'KN'
-                            : motivator === 'Utility'
-                              ? 'UR'
-                              : motivator === 'Surroundings'
-                                ? 'SH'
-                                : motivator === 'Others'
-                                  ? 'OA'
-                                  : motivator === 'Power'
-                                    ? 'PD'
-                                    : 'MS'
-                        const option1Desc = drivingForceDescriptions[option1Type as DrivingForceType]
-                        const option2Desc = drivingForceDescriptions[option2Type as DrivingForceType]
-
-                        return (
-                          <div key={motivator} className="bg-white rounded-lg p-4 border">
-                            <h4 className="font-semibold text-slate-700 mb-3">{motivator}</h4>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-3">
-                                <div className="w-32 text-xs font-medium" style={{ color: option1Desc.color }}>
-                                  {option1Desc.name}
-                                </div>
-                                <div className="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      width: `${(distribution.option1 / resultsWithDF.length) * 100}%`,
-                                      backgroundColor: option1Desc.color,
-                                    }}
-                                  />
-                                </div>
-                                <div className="w-12 text-right text-xs font-semibold">
-                                  {distribution.option1} ({Math.round((distribution.option1 / resultsWithDF.length) * 100)}%)
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <div className="w-32 text-xs font-medium" style={{ color: option2Desc.color }}>
-                                  {option2Desc.name}
-                                </div>
-                                <div className="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full"
-                                    style={{
-                                      width: `${(distribution.option2 / resultsWithDF.length) * 100}%`,
-                                      backgroundColor: option2Desc.color,
-                                    }}
-                                  />
-                                </div>
-                                <div className="w-12 text-right text-xs font-semibold">
-                                  {distribution.option2} ({Math.round((distribution.option2 / resultsWithDF.length) * 100)}%)
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )
-                      }
-                    )}
-                  </div>
-                </div>
+          {hasDrivingForces && aggregatedDrivingForcesScores && (
+            <div className="border-t-2 border-slate-200 pt-8 mb-8">
+              <h2 className="text-2xl font-bold text-slate-800 mb-2">Team Driving Forces Profile</h2>
+              <p className="text-slate-600 text-sm mb-6 max-w-3xl">
+                Aggregated Driving Forces scores across all employees with Driving Forces data, showing where your team
+                collectively leans on each motivator pair.
+              </p>
+              <div className="bg-slate-50 rounded-xl p-6">
+                <DrivingForcesChart
+                  scores={aggregatedDrivingForcesScores}
+                  title="Driving Forces (Team View)"
+                  subtitle="Each row shows your team’s relative pull toward each side of the motivator."
+                />
               </div>
-            </>
+            </div>
           )}
 
           {/* Department Collaboration Analysis */}

@@ -16,10 +16,10 @@ import {
   Radar,
   Legend,
 } from 'recharts'
-import { Download } from 'lucide-react'
+import { Download, Clock, CheckSquare, ArrowRight } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
@@ -32,11 +32,8 @@ import {
 } from '@/components/ui/select'
 import { generatePDFReport } from '@/lib/pdfGenerator'
 import {
-  classifyDrivingForces,
-  analyzeDISCIntegration,
-  getTeamDynamicsInsights,
-  getDevelopmentRecommendations,
 } from '@/lib/drivingForcesAnalysis'
+import DrivingForcesChart from '@/components/DrivingForcesChart'
 
 // Types
 type DISCType = 'D' | 'I' | 'S' | 'C'
@@ -78,6 +75,14 @@ interface ProfileDescription {
   adaptiveDesc: string
   stressResponse: string
   growth: string
+}
+
+interface CommunicationGuide {
+  styleLabel: string
+  howToCommunicate: string[]
+  howNotToCommunicate: string[]
+  selfPerception: string[]
+  othersPerception: string[]
 }
 
 interface Scores {
@@ -324,6 +329,93 @@ const questions: Question[] = [
     ],
   },
 ]
+
+const communicationGuides: Record<DISCType, CommunicationGuide> = {
+  D: {
+    styleLabel: 'Direct, fast-paced, and results-focused communicator',
+    howToCommunicate: [
+      'Get to the point quickly and lead with the bottom line or decision needed.',
+      'Be clear about goals, ownership, and timelines – focus on outcomes more than process.',
+      'Offer options and autonomy rather than prescribing every step.',
+    ],
+    howNotToCommunicate: [
+      'Do not bury key points in long stories or excessive background.',
+      'Avoid indecisive language, mixed messages, or lack of follow-through.',
+      'Do not take direct questions personally or respond with overly emotional reactions.',
+    ],
+    selfPerception: [
+      'You likely see yourself as confident, decisive, and driven to get results.',
+      'You may view your directness as efficient and helpful to the team.',
+    ],
+    othersPerception: [
+      'Others may see you as impatient, demanding, or overly blunt when under pressure.',
+      'Some may hesitate to challenge you or share concerns if they feel rushed or dismissed.',
+    ],
+  },
+  I: {
+    styleLabel: 'Enthusiastic, people-oriented, and expressive communicator',
+    howToCommunicate: [
+      'Start with connection – be warm, positive, and conversational.',
+      'Share the vision, impact, and “why” behind decisions, not just the details.',
+      'Give space for brainstorming, questions, and verbal processing.',
+    ],
+    howNotToCommunicate: [
+      'Do not be overly formal, distant, or purely data-only with no context.',
+      'Avoid shutting down ideas too quickly or focusing only on what is wrong.',
+      'Do not ignore their need for interaction by relying only on one-way communication.',
+    ],
+    selfPerception: [
+      'You likely see yourself as friendly, encouraging, and good with people.',
+      'You may view your optimism and energy as a key contribution to the team.',
+    ],
+    othersPerception: [
+      'Others may see you as scattered, overly talkative, or lacking follow-through at times.',
+      'Some may feel you overpromise or move on too quickly from details and commitments.',
+    ],
+  },
+  S: {
+    styleLabel: 'Calm, steady, and supportive communicator',
+    howToCommunicate: [
+      'Provide a safe, respectful space and avoid putting them on the spot unexpectedly.',
+      'Be clear, patient, and consistent – allow time to process and ask questions.',
+      'Explain how changes will affect people, stability, and day-to-day routines.',
+    ],
+    howNotToCommunicate: [
+      'Do not surprise them with last-minute changes or abrupt confrontations.',
+      'Avoid aggressive, high-pressure tactics or rapid-fire decisions with no input.',
+      'Do not dismiss their concerns about impact on people or team harmony.',
+    ],
+    selfPerception: [
+      'You likely see yourself as loyal, dependable, and a good listener.',
+      'You may view your calm presence as a stabilizing force for the team.',
+    ],
+    othersPerception: [
+      'Others may see you as resistant to change, quiet, or slow to decide.',
+      'Some may underestimate your opinions because you do not always speak first.',
+    ],
+  },
+  C: {
+    styleLabel: 'Thoughtful, precise, and data-driven communicator',
+    howToCommunicate: [
+      'Come prepared with facts, structure, and clear reasoning behind your message.',
+      'Give time to analyze information and ask detailed questions.',
+      'Be specific about expectations, quality standards, and processes.',
+    ],
+    howNotToCommunicate: [
+      'Do not be vague, inconsistent, or dismissive of details and risks.',
+      'Avoid pressuring for instant decisions without sufficient information.',
+      'Do not take critical questions as personal attacks – they are seeking clarity.',
+    ],
+    selfPerception: [
+      'You likely see yourself as careful, thorough, and committed to doing things right.',
+      'You may view your questions and critique as protecting quality and reducing risk.',
+    ],
+    othersPerception: [
+      'Others may see you as overly critical, slow, or rigid when standards feel too high.',
+      'Some may feel intimidated by your focus on accuracy or fear “being wrong” around you.',
+    ],
+  },
+}
 
 // Driving Forces Questions
 const drivingForceQuestions: DrivingForceQuestion[] = [
@@ -1194,6 +1286,7 @@ export default function DISCAssessment() {
         dept: employeeDept,
         teamCode: employeeTeamCode || undefined,
         ...scores,
+         drivingForces: drivingForceScores || undefined,
         date: new Date().toISOString().split('T')[0],
       }
 
@@ -1246,168 +1339,112 @@ export default function DISCAssessment() {
     const formValid = Boolean(employeeName && employeeEmail && employeeDept && employeeTeamCode)
 
     return (
-      <div className="min-h-screen bg-muted/20 py-10">
-        <div className="container max-w-5xl space-y-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <p className="text-sm uppercase tracking-wide text-muted-foreground">Assessment</p>
-              <h1 className="text-3xl font-semibold">DISC Natural & Adaptive styles</h1>
-              <p className="text-muted-foreground">Discover how you show up day-to-day and under pressure.</p>
-            </div>
-            <div className="flex gap-2">
-              {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
-                <div
-                  key={type}
-                  className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold shadow"
-                  style={{
-                    backgroundColor: profileDescriptions[type].bgColor,
-                    color: profileDescriptions[type].color,
-                  }}
-                >
-                  {type}
-                </div>
-              ))}
-            </div>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-50 to-stone-100 px-4 py-12 flex items-start sm:items-center justify-center">
+        <div className="w-full max-w-2xl space-y-8">
+          <div className="space-y-3 text-center">
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-slate-900">
+              DISC + Driving Forces
+            </h1>
+            <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+              Discover your natural behaviors and what motivates you.
+            </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[1.3fr,1fr]">
-            <Card className="border-border/80">
-              <CardHeader>
-                <CardTitle>Tell us about you</CardTitle>
-                <CardDescription>We will use this to personalize your results.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="employeeName">Your Name</Label>
-                    <Input
-                      id="employeeName"
-                      value={employeeName}
-                      onChange={(e) => setEmployeeName(e.target.value)}
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="employeeEmail">Email Address</Label>
-                    <Input
-                      id="employeeEmail"
-                      type="email"
-                      value={employeeEmail}
-                      onChange={(e) => setEmployeeEmail(e.target.value)}
-                      placeholder="name@company.com"
-                    />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label>Department</Label>
-                    <Select value={employeeDept || undefined} onValueChange={setEmployeeDept}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['Engineering', 'Marketing', 'Sales', 'Operations', 'Finance', 'HR', 'Executive', 'Other'].map(
-                          (dept) => (
-                            <SelectItem key={dept} value={dept}>
-                              {dept}
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="teamCode">Team Code <span className="text-red-500">*</span></Label>
-                    <Input
-                      id="teamCode"
-                      type="text"
-                      value={employeeTeamCode}
-                      onChange={(e) => setEmployeeTeamCode(e.target.value.toUpperCase())}
-                      placeholder="DTG01"
-                      maxLength={20}
-                      required
-                    />
-                    <p className="text-xs text-slate-500">Enter your team code (e.g., DTG01)</p>
-                  </div>
+          <Card className="border border-slate-100 bg-white/95 shadow-xl shadow-slate-900/5 rounded-3xl">
+            <CardContent className="space-y-6 pt-6 sm:pt-8">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="employeeName" className="text-sm font-medium text-slate-800">
+                    Your name
+                  </Label>
+                  <Input
+                    id="employeeName"
+                    value={employeeName}
+                    onChange={(e) => setEmployeeName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400"
+                  />
                 </div>
-
-                <div className="grid gap-3 rounded-lg border bg-muted/40 p-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-sm font-medium text-emerald-700">Natural style</p>
-                    <p className="text-sm text-muted-foreground">
-                      How you behave when relaxed and in your comfort zone.
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-amber-700">Adaptive style</p>
-                    <p className="text-sm text-muted-foreground">
-                      How you flex under stress, pressure, or challenging situations.
-                    </p>
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employeeEmail" className="text-sm font-medium text-slate-800">
+                    Email
+                  </Label>
+                  <Input
+                    id="employeeEmail"
+                    type="email"
+                    value={employeeEmail}
+                    onChange={(e) => setEmployeeEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400"
+                  />
                 </div>
-
-                <div className="rounded-lg border bg-card p-4">
-                  <h3 className="text-sm font-semibold text-foreground">How it works</h3>
-                  <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-                    <li>• {questions.length} DISC questions, each with 4 options.</li>
-                    <li>• Choose the statement MOST like you, then LEAST like you.</li>
-                    <li>• Then complete {drivingForceQuestions.length} Driving Forces questions.</li>
-                    <li>• Answer based on your natural tendencies (10-15 minutes total).</li>
-                  </ul>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label className="text-sm font-medium text-slate-800">Department</Label>
+                  <Select value={employeeDept || undefined} onValueChange={setEmployeeDept}>
+                    <SelectTrigger className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['Engineering', 'Marketing', 'Sales', 'Operations', 'Finance', 'HR', 'Executive', 'Other'].map(
+                        (dept) => (
+                          <SelectItem key={dept} value={dept}>
+                            {dept}
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    className="flex-1 sm:flex-none"
-                    onClick={() => {
-                      const randomized = questions.map((q) => ({
-                        ...q,
-                        options: [...q.options].sort(() => Math.random() - 0.5),
-                      }))
-                      setShuffledQuestions(randomized)
-                      setCurrentQuestion(0)
-                      setSelectionPhase('most')
-                      setCurrentMostSelection(null)
-                      setCurrentView('assessment')
-                    }}
-                    disabled={!formValid}
-                  >
-                    Start assessment
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 sm:flex-none"
-                    onClick={() => setCurrentView('admin')}
-                  >
-                    View Admin Dashboard
-                  </Button>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="teamCode" className="text-sm font-medium text-slate-800">
+                    Team code <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="teamCode"
+                    type="text"
+                    value={employeeTeamCode}
+                    onChange={(e) => setEmployeeTeamCode(e.target.value.toUpperCase())}
+                    placeholder="DTG01"
+                    maxLength={20}
+                    required
+                    className="h-11 rounded-xl border-slate-200 bg-slate-50/60 focus-visible:ring-slate-400"
+                  />
+                  <p className="text-xs text-slate-500">Use the code provided by your admin.</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="border-border/80">
-              <CardHeader>
-                <CardTitle>What we measure</CardTitle>
-                <CardDescription>Quick view of the four DISC styles.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
-                  <div key={type} className="flex items-start gap-3 rounded-lg border p-3">
-                    <div
-                      className="flex h-10 w-10 items-center justify-center rounded-md text-sm font-semibold"
-                      style={{
-                        backgroundColor: profileDescriptions[type].bgColor,
-                        color: profileDescriptions[type].color,
-                      }}
-                    >
-                      {type}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{profileDescriptions[type].name}</p>
-                      <p className="text-sm text-muted-foreground">{profileDescriptions[type].traits.join(' • ')}</p>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+              <div className="pt-2">
+                <Button
+                  className="inline-flex w-full items-center justify-center gap-2 h-11 rounded-xl bg-slate-900 text-white text-sm font-medium shadow-[0_18px_40px_rgba(15,23,42,0.35)] hover:bg-slate-900/90"
+                  onClick={() => {
+                    const randomized = questions.map((q) => ({
+                      ...q,
+                      options: [...q.options].sort(() => Math.random() - 0.5),
+                    }))
+                    setShuffledQuestions(randomized)
+                    setCurrentQuestion(0)
+                    setSelectionPhase('most')
+                    setCurrentMostSelection(null)
+                    setCurrentView('assessment')
+                  }}
+                  disabled={!formValid}
+                >
+                  <span>Start assessment</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-center gap-6 text-xs text-slate-500">
+            <div className="inline-flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              <span>10–15 min</span>
+            </div>
+            <div className="inline-flex items-center gap-2">
+              <CheckSquare className="h-4 w-4" />
+              <span>{questions.length + drivingForceQuestions.length} questions</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1611,45 +1648,7 @@ export default function DISCAssessment() {
     const adaptiveProfile = profileDescriptions[scores.primaryAdaptive]
     const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
     const hasDrivingForces = drivingForceScores !== null
-
-    // Driving Forces chart data
-    const drivingForcesData = hasDrivingForces
-      ? (['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-          (motivator) => {
-            const primary = drivingForceScores!.primaryForces[motivator]
-            const opposite =
-              motivator === 'Knowledge'
-                ? primary === 'KI'
-                  ? 'KN'
-                  : 'KI'
-                : motivator === 'Utility'
-                  ? primary === 'US'
-                    ? 'UR'
-                    : 'US'
-                  : motivator === 'Surroundings'
-                    ? primary === 'SO'
-                      ? 'SH'
-                      : 'SO'
-                    : motivator === 'Others'
-                      ? primary === 'OI'
-                        ? 'OA'
-                        : 'OI'
-                      : motivator === 'Power'
-                        ? primary === 'PC'
-                          ? 'PD'
-                          : 'PC'
-                        : primary === 'MR'
-                          ? 'MS'
-                          : 'MR'
-            return {
-              motivator,
-              primary: drivingForceScores!.scores[primary],
-              opposite: drivingForceScores!.scores[opposite],
-              primaryType: primary,
-            }
-          }
-        )
-      : []
+    const communicationGuide = communicationGuides[scores.primaryNatural]
 
     return (
       <div className="min-h-screen bg-muted/20 py-10">
@@ -1868,598 +1867,86 @@ export default function DISCAssessment() {
               </div>
             </div>
 
-            {/* Driving Forces Section */}
-            {hasDrivingForces && (
-              <>
-                <div className="border-t-2 border-slate-200 pt-8 mb-8">
-                  <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Your Driving Forces</h2>
-                    <p className="text-slate-600">What motivates you and drives your decisions</p>
-                  </div>
+            {/* Communication Guidance */}
+            <div className="border-t-2 border-slate-200 pt-8 mb-8">
+              <div className="mb-4">
+                <h2 className="text-2xl font-bold text-slate-800 mb-1">How to Communicate With You</h2>
+                <p className="text-slate-600 text-sm">
+                  Based primarily on your Natural style ({scores.primaryNatural} – {naturalProfile.name}).
+                </p>
+              </div>
 
-                  {/* Primary Driving Forces Overview */}
-                  <div className="grid md:grid-cols-3 gap-4 mb-8">
-                    {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                      (motivator) => {
-                        const primary = drivingForceScores!.primaryForces[motivator]
-                        const desc = drivingForceDescriptions[primary]
-                        return (
-                          <div
-                            key={motivator}
-                            className="rounded-xl p-4 border-2"
-                            style={{
-                              borderColor: desc.color,
-                              backgroundColor: desc.bgColor,
-                            }}
-                          >
-                            <div className="text-sm font-semibold text-slate-600 mb-1">{motivator}</div>
-                            <div className="text-lg font-bold mb-1" style={{ color: desc.color }}>
-                              {desc.name}
-                            </div>
-                            <p className="text-xs text-slate-600">{desc.description}</p>
-                          </div>
-                        )
-                      }
-                    )}
-                  </div>
-
-                  {/* Driving Forces Chart */}
-                  <div className="bg-slate-50 rounded-xl p-5 mb-8">
-                    <h3 className="font-semibold text-slate-800 mb-4 text-center">Driving Forces by Motivator</h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={drivingForcesData} barGap={2}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="motivator" angle={-45} textAnchor="end" height={100} />
-                        <YAxis domain={[0, 15]} />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="primary" name="Primary" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="opposite" name="Opposite" fill="#94a3b8" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Detailed Driving Forces Scores */}
-                  <div className="bg-slate-50 rounded-xl p-5 mb-8">
-                    <h3 className="font-semibold text-slate-800 mb-4">All Driving Forces Scores</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                        (motivator) => {
-                          const primary = drivingForceScores!.primaryForces[motivator]
-                          const opposite =
-                            motivator === 'Knowledge'
-                              ? primary === 'KI'
-                                ? 'KN'
-                                : 'KI'
-                              : motivator === 'Utility'
-                                ? primary === 'US'
-                                  ? 'UR'
-                                  : 'US'
-                                : motivator === 'Surroundings'
-                                  ? primary === 'SO'
-                                    ? 'SH'
-                                    : 'SO'
-                                  : motivator === 'Others'
-                                    ? primary === 'OI'
-                                      ? 'OA'
-                                      : 'OI'
-                                    : motivator === 'Power'
-                                      ? primary === 'PC'
-                                        ? 'PD'
-                                        : 'PC'
-                                      : primary === 'MR'
-                                        ? 'MS'
-                                        : 'MR'
-                          const primaryDesc = drivingForceDescriptions[primary]
-                          const oppositeDesc = drivingForceDescriptions[opposite]
-                          return (
-                            <div key={motivator} className="bg-white rounded-lg p-4 border">
-                              <h4 className="font-semibold text-slate-700 mb-3">{motivator}</h4>
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className="w-24 text-xs font-medium"
-                                    style={{ color: primaryDesc.color }}
-                                  >
-                                    {primaryDesc.name}
-                                  </div>
-                                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${(drivingForceScores!.scores[primary] / 15) * 100}%`,
-                                        backgroundColor: primaryDesc.color,
-                                      }}
-                                    />
-                                  </div>
-                                  <div className="w-8 text-right text-xs font-semibold">
-                                    {drivingForceScores!.scores[primary]}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className="w-24 text-xs font-medium text-slate-500"
-                                    style={{ color: oppositeDesc.color }}
-                                  >
-                                    {oppositeDesc.name}
-                                  </div>
-                                  <div className="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${(drivingForceScores!.scores[opposite] / 15) * 100}%`,
-                                        backgroundColor: oppositeDesc.color,
-                                      }}
-                                    />
-                                  </div>
-                                  <div className="w-8 text-right text-xs font-semibold text-slate-500">
-                                    {drivingForceScores!.scores[opposite]}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        }
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Force Intensity Classification */}
-                  {(() => {
-                    const classification = classifyDrivingForces(
-                      drivingForceScores!.scores,
-                      drivingForceDescriptions
-                    )
-                    const forceRankingData = [
-                      ...classification.primary.map(f => ({ ...f, category: 'Primary' })),
-                      ...classification.situational.map(f => ({ ...f, category: 'Situational' })),
-                      ...classification.indifferent.map(f => ({ ...f, category: 'Indifferent' })),
-                    ].sort((a, b) => b.score - a.score)
-
-                    return (
-                      <>
-                        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 mb-8">
-                          <h3 className="font-semibold text-slate-800 mb-4 text-center text-lg">
-                            Force Intensity Classification
-                          </h3>
-                          <p className="text-sm text-slate-600 text-center mb-6">
-                            Your driving forces categorized by their influence on your behavior
-                          </p>
-
-                          <div className="grid md:grid-cols-3 gap-4 mb-6">
-                            {/* Primary Forces */}
-                            <div className="bg-white rounded-lg p-4 border-2 border-emerald-500">
-                              <div className="flex items-center gap-2 mb-3">
-                                <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                                <h4 className="font-semibold text-emerald-700">Primary Forces</h4>
-                                <span className="ml-auto text-xs font-semibold text-emerald-600">
-                                  {classification.primary.length}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-600 mb-3">
-                                Most influential motivators (8-15 points) that consistently drive your behavior
-                              </p>
-                              <div className="space-y-2">
-                                {classification.primary.map((force) => (
-                                  <div key={force.type} className="flex items-center justify-between p-2 bg-emerald-50 rounded">
-                                    <div className="flex-1">
-                                      <div className="font-medium text-sm" style={{ color: force.description.color }}>
-                                        {force.description.name}
-                                      </div>
-                                      <div className="text-xs text-slate-600">{force.score} points</div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Situational Forces */}
-                            <div className="bg-white rounded-lg p-4 border-2 border-amber-500">
-                              <div className="flex items-center gap-2 mb-3">
-                                <div className="w-3 h-3 rounded-full bg-amber-500"></div>
-                                <h4 className="font-semibold text-amber-700">Situational Forces</h4>
-                                <span className="ml-auto text-xs font-semibold text-amber-600">
-                                  {classification.situational.length}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-600 mb-3">
-                                Context-dependent motivators (4-7 points) that emerge in specific situations
-                              </p>
-                              <div className="space-y-2">
-                                {classification.situational.length > 0 ? (
-                                  classification.situational.map((force) => (
-                                    <div key={force.type} className="flex items-center justify-between p-2 bg-amber-50 rounded">
-                                      <div className="flex-1">
-                                        <div className="font-medium text-sm" style={{ color: force.description.color }}>
-                                          {force.description.name}
-                                        </div>
-                                        <div className="text-xs text-slate-600">{force.score} points</div>
-                                      </div>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <p className="text-xs text-slate-500 italic">None in this range</p>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Indifferent Forces */}
-                            <div className="bg-white rounded-lg p-4 border-2 border-slate-300">
-                              <div className="flex items-center gap-2 mb-3">
-                                <div className="w-3 h-3 rounded-full bg-slate-400"></div>
-                                <h4 className="font-semibold text-slate-700">Indifferent Forces</h4>
-                                <span className="ml-auto text-xs font-semibold text-slate-600">
-                                  {classification.indifferent.length}
-                                </span>
-                              </div>
-                              <p className="text-xs text-slate-600 mb-3">
-                                Minimal impact motivators (0-3 points) that have little influence on your behavior
-                              </p>
-                              <div className="space-y-2">
-                                {classification.indifferent.length > 0 ? (
-                                  classification.indifferent.map((force) => (
-                                    <div key={force.type} className="flex items-center justify-between p-2 bg-slate-50 rounded">
-                                      <div className="flex-1">
-                                        <div className="font-medium text-sm text-slate-500">
-                                          {force.description.name}
-                                        </div>
-                                        <div className="text-xs text-slate-500">{force.score} points</div>
-                                      </div>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <p className="text-xs text-slate-500 italic">None in this range</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Force Ranking Chart */}
-                          <div className="bg-white rounded-lg p-4">
-                            <h4 className="font-semibold text-slate-800 mb-4 text-center">All Forces Ranked by Intensity</h4>
-                            <div className="space-y-2">
-                              {forceRankingData.map((entry, index) => {
-                                const fillColor =
-                                  entry.category === 'Primary'
-                                    ? '#10b981'
-                                    : entry.category === 'Situational'
-                                      ? '#f59e0b'
-                                      : '#94a3b8'
-                                return (
-                                  <div key={index} className="flex items-center gap-3">
-                                    <div className="w-32 text-xs font-medium text-slate-700">{entry.description.name}</div>
-                                    <div className="flex-1 h-6 bg-slate-200 rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full rounded-full transition-all"
-                                        style={{
-                                          width: `${(entry.score / 15) * 100}%`,
-                                          backgroundColor: fillColor,
-                                        }}
-                                      />
-                                    </div>
-                                    <div className="w-12 text-right text-xs font-semibold">{entry.score}</div>
-                                    <div className="w-20 text-xs text-slate-500">{entry.category}</div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                            <div className="mt-4 flex justify-center gap-4 text-xs">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded bg-emerald-500"></div>
-                                <span>Primary</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded bg-amber-500"></div>
-                                <span>Situational</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded bg-slate-400"></div>
-                                <span>Indifferent</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* DISC Integration Insights */}
-                        {(() => {
-                          const primaryForceTypes = classification.primary.map(f => f.type)
-                          const discIntegration = analyzeDISCIntegration(
-                            scores.primaryNatural,
-                            primaryForceTypes,
-                            drivingForceDescriptions
-                          )
-
-                          return (
-                            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 mb-8">
-                              <h3 className="font-semibold text-slate-800 mb-4 text-lg">
-                                DISC & Driving Forces Integration
-                              </h3>
-                              <p className="text-sm text-slate-600 mb-4">
-                                How your {scores.primaryNatural} behavioral style aligns with your primary driving forces
-                              </p>
-
-                              <div className="mb-4">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span
-                                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                      discIntegration.alignment === 'strong'
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : discIntegration.alignment === 'moderate'
-                                          ? 'bg-amber-100 text-amber-700'
-                                          : 'bg-red-100 text-red-700'
-                                    }`}
-                                  >
-                                    {discIntegration.alignment === 'strong'
-                                      ? 'Strong Alignment'
-                                      : discIntegration.alignment === 'moderate'
-                                        ? 'Moderate Alignment'
-                                        : 'Potential Tension'}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div className="space-y-3 mb-4">
-                                {discIntegration.insights.map((insight, idx) => (
-                                  <div key={idx} className="bg-white rounded-lg p-3 border-l-4 border-blue-500">
-                                    <p className="text-sm text-slate-700">{insight}</p>
-                                  </div>
-                                ))}
-                              </div>
-
-                              <div className="bg-white rounded-lg p-4">
-                                <h4 className="font-semibold text-slate-800 mb-2">Recommendations</h4>
-                                <ul className="space-y-2">
-                                  {discIntegration.recommendations.map((rec, idx) => (
-                                    <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                      <span className="text-blue-500 mt-1">•</span>
-                                      <span>{rec}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          )
-                        })()}
-
-                        {/* Team Dynamics */}
-                        {(() => {
-                          const primaryForceTypes = classification.primary.map(f => f.type)
-                          const teamDynamics = getTeamDynamicsInsights(primaryForceTypes, drivingForceDescriptions)
-
-                          return (
-                            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 mb-8">
-                              <h3 className="font-semibold text-slate-800 mb-4 text-lg">Team Dynamics & Collaboration</h3>
-                              <p className="text-sm text-slate-600 mb-4">
-                                How your driving forces influence your collaboration style and team interactions
-                              </p>
-
-                              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-slate-800 mb-2">Collaboration Style</h4>
-                                  <p className="text-sm text-slate-700">{teamDynamics.collaborationStyle}</p>
-                                </div>
-
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-slate-800 mb-2">Communication Preferences</h4>
-                                  <ul className="space-y-1">
-                                    {Array.isArray(teamDynamics.communicationPreferences) ? (
-                                      teamDynamics.communicationPreferences.map((pref, idx) => (
-                                        <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                          <span className="text-green-500 mt-1">•</span>
-                                          <span>{pref}</span>
-                                        </li>
-                                      ))
-                                    ) : (
-                                      <li className="text-sm text-slate-700">{teamDynamics.communicationPreferences}</li>
-                                    )}
-                                  </ul>
-                                </div>
-                              </div>
-
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-slate-800 mb-2">Complementary Profiles</h4>
-                                  <ul className="space-y-1">
-                                    {Array.isArray(teamDynamics.complementaryProfiles) ? (
-                                      teamDynamics.complementaryProfiles.map((profile, idx) => (
-                                        <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                          <span className="text-emerald-500 mt-1">✓</span>
-                                          <span>{profile}</span>
-                                        </li>
-                                      ))
-                                    ) : (
-                                      <li className="text-sm text-slate-700">{teamDynamics.complementaryProfiles}</li>
-                                    )}
-                                  </ul>
-                                </div>
-
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-slate-800 mb-2">Potential Friction Points</h4>
-                                  <ul className="space-y-1">
-                                    {Array.isArray(teamDynamics.potentialFrictions) ? (
-                                      teamDynamics.potentialFrictions.map((friction, idx) => (
-                                        <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                          <span className="text-amber-500 mt-1">⚠</span>
-                                          <span>{friction}</span>
-                                        </li>
-                                      ))
-                                    ) : (
-                                      <li className="text-sm text-slate-700">{teamDynamics.potentialFrictions}</li>
-                                    )}
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })()}
-
-                        {/* Enhanced Descriptions with Examples */}
-                        <div className="bg-slate-50 rounded-xl p-6 mb-8">
-                          <h3 className="font-semibold text-slate-800 mb-4 text-lg">Detailed Force Descriptions</h3>
-                          <div className="grid md:grid-cols-2 gap-4">
-                            {classification.primary.map((force) => (
-                              <div key={force.type} className="bg-white rounded-lg p-4 border-l-4" style={{ borderColor: force.description.color }}>
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: force.description.color }}></div>
-                                  <h4 className="font-semibold text-slate-800">{force.description.fullName}</h4>
-                                  <span className="ml-auto text-xs font-semibold" style={{ color: force.description.color }}>
-                                    {force.score} pts
-                                  </span>
-                                </div>
-                                <p className="text-sm text-slate-700 mb-3">{force.description.description}</p>
-
-                                {force.description.examples && force.description.examples.length > 0 && (
-                                  <div className="mb-3">
-                                    <div className="text-xs font-semibold text-slate-600 mb-1">Examples:</div>
-                                    <ul className="space-y-1">
-                                      {force.description.examples.slice(0, 2).map((example, idx) => (
-                                        <li key={idx} className="text-xs text-slate-600 flex items-start gap-2">
-                                          <span className="mt-1">•</span>
-                                          <span>{example}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-
-                                <div className="grid grid-cols-2 gap-3">
-                                  {force.description.strengths && force.description.strengths.length > 0 && (
-                                    <div>
-                                      <div className="text-xs font-semibold text-emerald-700 mb-1">Strengths:</div>
-                                      <ul className="space-y-1">
-                                        {force.description.strengths.slice(0, 2).map((strength, idx) => (
-                                          <li key={idx} className="text-xs text-emerald-600 flex items-start gap-1">
-                                            <span>✓</span>
-                                            <span>{strength}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-
-                                  {force.description.blindSpots && force.description.blindSpots.length > 0 && (
-                                    <div>
-                                      <div className="text-xs font-semibold text-amber-700 mb-1">Watch for:</div>
-                                      <ul className="space-y-1">
-                                        {force.description.blindSpots.slice(0, 2).map((blindSpot, idx) => (
-                                          <li key={idx} className="text-xs text-amber-600 flex items-start gap-1">
-                                            <span>⚠</span>
-                                            <span>{blindSpot}</span>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Development Recommendations */}
-                        {(() => {
-                          const devRecs = getDevelopmentRecommendations(classification)
-
-                          return (
-                            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 mb-8">
-                              <h3 className="font-semibold text-slate-800 mb-4 text-lg">Development Recommendations</h3>
-                              <p className="text-sm text-slate-600 mb-4">
-                                Actionable strategies to leverage your driving forces for personal growth
-                              </p>
-
-                              <div className="grid md:grid-cols-2 gap-4 mb-4">
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-emerald-700 mb-2">Leverage Primary Forces</h4>
-                                  <ul className="space-y-2">
-                                    {devRecs.leveragePrimary.map((rec, idx) => (
-                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                        <span className="text-emerald-500 mt-1">✓</span>
-                                        <span>{rec}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-amber-700 mb-2">Develop Situational Forces</h4>
-                                  <ul className="space-y-2">
-                                    {devRecs.developSituational.map((rec, idx) => (
-                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                        <span className="text-amber-500 mt-1">→</span>
-                                        <span>{rec}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              </div>
-
-                              <div className="grid md:grid-cols-2 gap-4">
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-slate-700 mb-2">Work With Indifferent Forces</h4>
-                                  <ul className="space-y-2">
-                                    {devRecs.workWithIndifferent.map((rec, idx) => (
-                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                        <span className="text-slate-400 mt-1">•</span>
-                                        <span>{rec}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-
-                                <div className="bg-white rounded-lg p-4">
-                                  <h4 className="font-semibold text-blue-700 mb-2">Personal Development Goals</h4>
-                                  <ul className="space-y-2">
-                                    {devRecs.personalGoals.map((goal, idx) => (
-                                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                                        <span className="text-blue-500 mt-1">🎯</span>
-                                        <span>{goal}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })()}
-                      </>
-                    )
-                  })()}
-
-                  {/* Driving Forces Insights */}
-                  <div className="space-y-4 mb-8">
-                    <div className="bg-purple-50 rounded-lg p-4">
-                      <h3 className="font-semibold text-purple-800 mb-2">💡 Your Primary Motivators</h3>
-                      <div className="grid md:grid-cols-2 gap-3 mt-3">
-                        {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
-                          (motivator) => {
-                            const primary = drivingForceScores!.primaryForces[motivator]
-                            const desc = drivingForceDescriptions[primary]
-                            return (
-                              <div key={motivator} className="bg-white rounded p-3">
-                                <div className="font-semibold text-sm mb-1" style={{ color: desc.color }}>
-                                  {motivator}: {desc.name}
-                                </div>
-                                <p className="text-xs text-slate-600">{desc.description}</p>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {desc.traits.map((trait) => (
-                                    <span
-                                      key={trait}
-                                      className="px-2 py-0.5 bg-slate-100 rounded text-xs"
-                                      style={{ color: desc.color }}
-                                    >
-                                      {trait}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )
-                          }
-                        )}
-                      </div>
-                    </div>
-                  </div>
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                  <h3 className="font-semibold text-slate-800 mb-2">Do this when communicating with you</h3>
+                  <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                    {communicationGuide.howToCommunicate.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-emerald-500">✓</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </>
+
+                <div className="bg-rose-50 rounded-xl p-4 border border-rose-100">
+                  <h3 className="font-semibold text-rose-800 mb-2">Avoid this when communicating with you</h3>
+                  <ul className="mt-2 space-y-2 text-sm text-rose-800">
+                    {communicationGuide.howNotToCommunicate.map((tip, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-rose-500">✕</span>
+                        <span>{tip}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl p-4 border border-slate-200">
+                  <h3 className="font-semibold text-slate-800 mb-2">How you likely see yourself</h3>
+                  <ul className="mt-1 space-y-2 text-sm text-slate-700">
+                    {communicationGuide.selfPerception.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-slate-400">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-white rounded-xl p-4 border border-slate-200">
+                  <h3 className="font-semibold text-slate-800 mb-2">How others may see you</h3>
+                  <ul className="mt-1 space-y-2 text-sm text-slate-700">
+                    {communicationGuide.othersPerception.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="mt-[3px] text-slate-400">•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Driving Forces Section */}
+            {hasDrivingForces && drivingForceScores && (
+              <div className="border-t-2 border-slate-200 pt-8 mb-8">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Your Driving Forces</h2>
+                  <p className="text-slate-600 text-sm max-w-2xl mx-auto">
+                    These six scales show how strongly you lean toward each side of the core motivators that drive your
+                    decisions and priorities.
+                  </p>
+                </div>
+
+                <div className="bg-slate-50 rounded-xl p-6">
+                  <DrivingForcesChart
+                    scores={drivingForceScores.scores}
+                    title="Driving Forces Profile"
+                    subtitle="Higher numbers indicate a stronger pull toward that side of each motivator."
+                  />
+                </div>
+              </div>
             )}
 
             <div className="space-y-3">
