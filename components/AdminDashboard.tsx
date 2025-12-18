@@ -462,6 +462,7 @@ export default function AdminDashboard() {
   })
 
   const shifters = allResults.filter((r) => r.primaryNatural !== r.primaryAdaptive)
+  const departmentCollaboration = insights?.departmentCollaboration
 
   if (allResults.length === 0 && !loadingResults) {
     return (
@@ -909,7 +910,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {!loadingInsights && !insights?.departmentCollaboration && (
+            {!loadingInsights && !departmentCollaboration && (
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
                 <p className="text-sm font-semibold text-amber-800 mb-1">Analysis Not Available</p>
                 <p className="text-sm text-amber-700">
@@ -922,14 +923,14 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            {!loadingInsights && insights?.departmentCollaboration && (
+            {!loadingInsights && departmentCollaboration && (
               <>
-                {!insights.departmentCollaboration.metadata?.available ? (
+                {!departmentCollaboration.metadata?.available ? (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <p className="text-sm font-semibold text-blue-800 mb-1">Insufficient Data</p>
                     <p className="text-sm text-blue-700">
                       Need at least 2 departments with results to analyze collaboration. Currently have{' '}
-                      {insights.departmentCollaboration.metadata?.departmentCount || 0} department(s).
+                      {departmentCollaboration.metadata?.departmentCount || 0} department(s).
                     </p>
                   </div>
                 ) : (
@@ -947,9 +948,9 @@ export default function AdminDashboard() {
                     {/* Compatibility Matrix Heatmap */}
                     <div className="bg-slate-50 rounded-xl p-6 mb-8">
                       <h3 className="font-semibold text-slate-800 mb-4">Compatibility Matrix</h3>
-                      {insights.departmentCollaboration.compatibilityMatrix &&
-                      Array.isArray(insights.departmentCollaboration.compatibilityMatrix) &&
-                      insights.departmentCollaboration.compatibilityMatrix.length > 0 ? (
+                      {departmentCollaboration.compatibilityMatrix &&
+                      Array.isArray(departmentCollaboration.compatibilityMatrix) &&
+                      departmentCollaboration.compatibilityMatrix.length > 0 ? (
                         <div className="space-y-4">
                           {/* Heatmap Grid */}
                           <div className="bg-white rounded-lg p-4 border border-slate-200 overflow-x-auto">
@@ -960,7 +961,7 @@ export default function AdminDashboard() {
                                     <th className="text-left py-2 px-3 font-semibold text-slate-700"></th>
                                     {Array.from(
                                       new Set(
-                                        insights.departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                        departmentCollaboration.compatibilityMatrix.flatMap((m) => [
                                           m.dept1,
                                           m.dept2,
                                         ])
@@ -980,7 +981,7 @@ export default function AdminDashboard() {
                                 <tbody>
                                   {Array.from(
                                     new Set(
-                                      insights.departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                      departmentCollaboration.compatibilityMatrix.flatMap((m) => [
                                         m.dept1,
                                         m.dept2,
                                       ])
@@ -992,7 +993,7 @@ export default function AdminDashboard() {
                                         <td className="py-2 px-3 font-medium text-slate-700 text-xs">{dept1}</td>
                                         {Array.from(
                                           new Set(
-                                            insights.departmentCollaboration.compatibilityMatrix.flatMap((m) => [
+                                            departmentCollaboration.compatibilityMatrix.flatMap((m) => [
                                               m.dept1,
                                               m.dept2,
                                             ])
@@ -1009,7 +1010,7 @@ export default function AdminDashboard() {
                                                 </td>
                                               )
                                             }
-                                            const entry = insights.departmentCollaboration.compatibilityMatrix.find(
+                                            const entry = departmentCollaboration.compatibilityMatrix.find(
                                               (m) =>
                                                 (m.dept1 === dept1 && m.dept2 === dept2) ||
                                                 (m.dept1 === dept2 && m.dept2 === dept1)
@@ -1048,7 +1049,7 @@ export default function AdminDashboard() {
                           {/* Detailed List */}
                           <div className="space-y-3">
                             <h4 className="font-medium text-slate-700 text-sm">Detailed Compatibility Scores</h4>
-                            {insights.departmentCollaboration.compatibilityMatrix
+                            {departmentCollaboration.compatibilityMatrix
                               .sort((a, b) => b.score - a.score)
                               .map((entry, idx) => (
                                 <div
@@ -1109,11 +1110,11 @@ export default function AdminDashboard() {
                     {/* Profile Comparisons */}
                     <div className="bg-slate-50 rounded-xl p-6 mb-8">
                       <h3 className="font-semibold text-slate-800 mb-4">Department Profile Comparisons</h3>
-                      {insights.departmentCollaboration.profileComparisons &&
-                      Array.isArray(insights.departmentCollaboration.profileComparisons) &&
-                      insights.departmentCollaboration.profileComparisons.length > 0 ? (
+                      {departmentCollaboration.profileComparisons &&
+                      Array.isArray(departmentCollaboration.profileComparisons) &&
+                      departmentCollaboration.profileComparisons.length > 0 ? (
                         <div className="space-y-6">
-                          {insights.departmentCollaboration.profileComparisons.map((comp, idx) => (
+                          {departmentCollaboration.profileComparisons.map((comp, idx) => (
                             <div key={idx} className="bg-white rounded-lg p-6 border border-slate-200 shadow-sm">
                               <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-lg font-semibold text-slate-700">
@@ -1228,11 +1229,11 @@ export default function AdminDashboard() {
                     {/* Collaboration Recommendations */}
                     <div className="bg-slate-50 rounded-xl p-6 mb-8">
                       <h3 className="font-semibold text-slate-800 mb-4">Collaboration Recommendations</h3>
-                      {insights.departmentCollaboration.recommendations &&
-                      Array.isArray(insights.departmentCollaboration.recommendations) &&
-                      insights.departmentCollaboration.recommendations.length > 0 ? (
+                      {departmentCollaboration.recommendations &&
+                      Array.isArray(departmentCollaboration.recommendations) &&
+                      departmentCollaboration.recommendations.length > 0 ? (
                         <div className="space-y-4">
-                          {insights.departmentCollaboration.recommendations.map((rec, idx) => (
+                          {departmentCollaboration.recommendations.map((rec, idx) => (
                             <div key={idx} className="bg-white rounded-lg p-5 border border-slate-200 shadow-sm">
                               <div className="flex items-center gap-3 mb-4">
                                 <h4 className="font-semibold text-slate-700">
