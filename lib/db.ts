@@ -20,6 +20,7 @@ try {
 
   // Initialize schema
   function initializeSchema() {
+    // Base table and indexes that rely only on always-present columns
     db.exec(`
       CREATE TABLE IF NOT EXISTS results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,15 +43,27 @@ try {
       );
 
       CREATE INDEX IF NOT EXISTS idx_department ON results(department);
-      CREATE INDEX IF NOT EXISTS idx_team_code ON results(team_code);
       CREATE INDEX IF NOT EXISTS idx_created_at ON results(created_at);
     `)
-    
-    // Add team_code column if it doesn't exist (for existing databases)
+
+    // Ensure team_code column exists for existing databases that predate it
     try {
-      db.exec(`ALTER TABLE results ADD COLUMN team_code TEXT;`)
+      const columns = db.prepare('PRAGMA table_info(results)').all() as { name: string }[]
+      const hasTeamCode = columns.some((col) => col.name === 'team_code')
+      if (!hasTeamCode) {
+        db.exec('ALTER TABLE results ADD COLUMN team_code TEXT;')
+      }
     } catch (error) {
-      // Column already exists, ignore error
+      console.error('Error ensuring team_code column exists:', error)
+      // Don't throw here; the app can still run without this optional column
+    }
+
+    // Create index on team_code only after we're sure the column exists
+    try {
+      db.exec('CREATE INDEX IF NOT EXISTS idx_team_code ON results(team_code);')
+    } catch (error) {
+      console.error('Error creating idx_team_code index:', error)
+      // Non-fatal: lack of this index only impacts query performance
     }
   }
 

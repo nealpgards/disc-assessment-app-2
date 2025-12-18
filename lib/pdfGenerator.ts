@@ -735,16 +735,17 @@ The percentages indicate the relative strength of each DISC dimension in your pr
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(51, 65, 85)
-
+    
     const motivators = ['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies']
+    const drivingForces = result.drivingForces!
     motivators.forEach((motivator) => {
       if (yPos > pageHeight - 30) {
         doc.addPage()
         currentPage++
         yPos = margin + 20
       }
-      const primaryType = result.drivingForces.primaryForces[motivator]
-      const score = result.drivingForces.scores[primaryType] || 0
+      const primaryType = drivingForces.primaryForces[motivator]
+      const score = drivingForces.scores[primaryType] || 0
       doc.text(`${motivator}: ${primaryType} (${score} points)`, margin + 5, yPos)
       yPos += 8
     })
