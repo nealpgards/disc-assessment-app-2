@@ -1,79 +1,4 @@
-import Database from 'better-sqlite3'
-import path from 'path'
-import fs from 'fs'
-
-const dbPath = path.join(process.cwd(), 'data', 'disc-assessment.db')
-
-// Ensure data directory exists
-const dataDir = path.dirname(dbPath)
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true })
-}
-
-// Initialize database connection
-let db: InstanceType<typeof Database>
-try {
-  db = new Database(dbPath)
-  
-  // Enable foreign keys
-  db.pragma('foreign_keys = ON')
-
-  // Initialize schema
-  function initializeSchema() {
-    // Base table and indexes that rely only on always-present columns
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS results (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        email TEXT,
-        department TEXT NOT NULL,
-        team_code TEXT,
-        natural_D INTEGER NOT NULL,
-        natural_I INTEGER NOT NULL,
-        natural_S INTEGER NOT NULL,
-        natural_C INTEGER NOT NULL,
-        adaptive_D INTEGER NOT NULL,
-        adaptive_I INTEGER NOT NULL,
-        adaptive_S INTEGER NOT NULL,
-        adaptive_C INTEGER NOT NULL,
-        primary_natural TEXT NOT NULL,
-        primary_adaptive TEXT NOT NULL,
-        driving_forces TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_department ON results(department);
-      CREATE INDEX IF NOT EXISTS idx_created_at ON results(created_at);
-    `)
-
-    // Ensure team_code column exists for existing databases that predate it
-    try {
-      const columns = db.prepare('PRAGMA table_info(results)').all() as { name: string }[]
-      const hasTeamCode = columns.some((col) => col.name === 'team_code')
-      if (!hasTeamCode) {
-        db.exec('ALTER TABLE results ADD COLUMN team_code TEXT;')
-      }
-    } catch (error) {
-      console.error('Error ensuring team_code column exists:', error)
-      // Don't throw here; the app can still run without this optional column
-    }
-
-    // Create index on team_code only after we're sure the column exists
-    try {
-      db.exec('CREATE INDEX IF NOT EXISTS idx_team_code ON results(team_code);')
-    } catch (error) {
-      console.error('Error creating idx_team_code index:', error)
-      // Non-fatal: lack of this index only impacts query performance
-    }
-  }
-
-  // Initialize on first load
-  initializeSchema()
-  console.log('Database initialized successfully at:', dbPath)
-} catch (error) {
-  console.error('Failed to initialize database:', error)
-  throw error
-}
+import { supabase } from './supabase'
 
 export interface ResultRow {
   id: number
@@ -95,5 +20,90 @@ export interface ResultRow {
   created_at: string
 }
 
-export const dbInstance = db
+// Database helper functions using Supabase
+export const dbInstance = {
+  // Insert a new result
+  async insertResult(data: {
+    name: string
+    email: string | null
+    department: string
+    team_code: string | null
+    natural_D: number
+    natural_I: number
+    natural_S: number
+    natural_C: number
+    adaptive_D: number
+    adaptive_I: number
+    adaptive_S: number
+    adaptive_C: number
+    primary_natural: string
+    primary_adaptive: string
+    driving_forces: string | null
+  }) {
+    const { data: result, error } = await supabase
+      .from('results')
+      .insert(data)
+      .select()
+      .single()
+
+    if (error) {
+      throw error
+    }
+
+    return {
+      lastInsertRowid: result.id,
+      changes: 1,
+    }
+  },
+
+  // Query results with optional filters
+  async queryResults(filters?: {
+    department?: string
+    teamCode?: string
+    startDate?: string
+    endDate?: string
+  }): Promise<ResultRow[]> {
+    let query = supabase.from('results').select('*')
+
+    if (filters?.department) {
+      query = query.eq('department', filters.department.trim())
+    }
+
+    if (filters?.teamCode) {
+      query = query.eq('team_code', filters.teamCode.trim().toUpperCase())
+    }
+
+    if (filters?.startDate) {
+      query = query.gte('created_at', filters.startDate)
+    }
+
+    if (filters?.endDate) {
+      query = query.lte('created_at', filters.endDate + ' 23:59:59')
+    }
+
+    query = query.order('created_at', { ascending: false })
+
+    const { data, error } = await query
+
+    if (error) {
+      throw error
+    }
+
+    return (data || []) as ResultRow[]
+  },
+
+  // Get all results
+  async getAllResults(): Promise<ResultRow[]> {
+    const { data, error } = await supabase
+      .from('results')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      throw error
+    }
+
+    return (data || []) as ResultRow[]
+  },
+}
 

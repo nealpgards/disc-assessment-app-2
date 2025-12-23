@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dbInstance } from '@/lib/db'
 
+// Force dynamic rendering to prevent Next.js from trying to execute this during build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -24,37 +28,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Insert result into database
-    const stmt = dbInstance.prepare(`
-      INSERT INTO results (
-        name, email, department, team_code,
-        natural_D, natural_I, natural_S, natural_C,
-        adaptive_D, adaptive_I, adaptive_S, adaptive_C,
-        primary_natural, primary_adaptive, driving_forces
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `)
-
     // Normalize department name (trim whitespace)
     const normalizedDept = dept.trim()
     const normalizedTeamCode = teamCode ? teamCode.trim().toUpperCase() : null
 
-    const result = stmt.run(
+    // Lightweight diagnostic logging (safe fields only)
+    console.log('[API/results POST] Saving result', {
       name,
-      email || null,
-      normalizedDept,
+      dept: normalizedDept,
+      rawTeamCode: teamCode,
       normalizedTeamCode,
-      natural.D,
-      natural.I,
-      natural.S,
-      natural.C,
-      adaptive.D,
-      adaptive.I,
-      adaptive.S,
-      adaptive.C,
-      primaryNatural,
-      primaryAdaptive,
-      drivingForces ? JSON.stringify(drivingForces) : null
-    )
+      hasDrivingForces: !!drivingForces,
+    })
+
+    // Insert result into database
+    const result = await dbInstance.insertResult({
+      name,
+      email: email || null,
+      department: normalizedDept,
+      team_code: normalizedTeamCode,
+      natural_D: natural.D,
+      natural_I: natural.I,
+      natural_S: natural.S,
+      natural_C: natural.C,
+      adaptive_D: adaptive.D,
+      adaptive_I: adaptive.I,
+      adaptive_S: adaptive.S,
+      adaptive_C: adaptive.C,
+      primary_natural: primaryNatural,
+      primary_adaptive: primaryAdaptive,
+      driving_forces: drivingForces ? JSON.stringify(drivingForces) : null,
+    })
+
+    console.log('[API/results POST] Saved result row', {
+      lastInsertRowid: result.lastInsertRowid,
+      changes: result.changes,
+      normalizedTeamCode,
+    })
 
     return NextResponse.json(
       { id: result.lastInsertRowid, success: true },
@@ -78,38 +88,35 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    let query = 'SELECT * FROM results'
-    const params: any[] = []
-    const conditions: string[] = []
+    const normalizedTeamCode = teamCode ? teamCode.trim().toUpperCase() : null
 
-    if (department) {
-      conditions.push('department = ?')
-      params.push(department.trim())
-    }
+    // Diagnostic logging for query + params
+    console.log('[API/results GET] Executing query', {
+      department,
+      rawTeamCode: teamCode,
+      normalizedTeamCode,
+      startDate,
+      endDate,
+    })
 
-    if (teamCode) {
-      conditions.push('team_code = ?')
-      params.push(teamCode.trim().toUpperCase())
-    }
+    // Query results with filters
+    const results = await dbInstance.queryResults({
+      department: department || undefined,
+      teamCode: normalizedTeamCode || undefined,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    })
 
-    if (startDate) {
-      conditions.push('created_at >= ?')
-      params.push(startDate)
-    }
-
-    if (endDate) {
-      conditions.push('created_at <= ?')
-      params.push(endDate + ' 23:59:59')
-    }
-
-    if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ')
-    }
-
-    query += ' ORDER BY created_at DESC'
-
-    const stmt = dbInstance.prepare(query)
-    const results = stmt.all(...params) as any[]
+    console.log('[API/results GET] Raw rows fetched', {
+      rowCount: results.length,
+      sampleTeamCodes: Array.from(
+        new Set(
+          results
+            .map((row: any) => row.team_code)
+            .filter((code: string | null | undefined) => !!code)
+        )
+      ).slice(0, 10),
+    })
 
     // Transform results to match frontend format
     const transformedResults = results.map((row) => {

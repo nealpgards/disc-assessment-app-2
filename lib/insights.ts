@@ -62,15 +62,9 @@ function getCompatibilityReasoning(dept1: DISCType, dept2: DISCType): string {
   return reasons[`${dept1}-${dept2}`] || 'Standard collaboration expected'
 }
 
-export function getAllResults(): ResultRow[] {
+export async function getAllResults(): Promise<ResultRow[]> {
   try {
-    if (!dbInstance) {
-      console.error('Database instance is not available')
-      return []
-    }
-    
-    const stmt = dbInstance.prepare('SELECT * FROM results ORDER BY created_at DESC')
-    const results = stmt.all() as ResultRow[]
+    const results = await dbInstance.getAllResults()
     
     console.log(`[Insights] Retrieved ${results.length} results from database`)
     return results
@@ -89,9 +83,9 @@ function normalizeDepartmentName(dept: string): string {
 }
 
 // Export for use in API routes
-export function getDepartmentData(): DepartmentData[] {
+export async function getDepartmentData(): Promise<DepartmentData[]> {
   try {
-    const results = getAllResults()
+    const results = await getAllResults()
     
     if (!results || results.length === 0) {
       console.log('[Insights] No results found in database')
@@ -224,10 +218,10 @@ function getPrimaryType(scores: Scores): DISCType {
   return sorted[0][0]
 }
 
-export function calculateDepartmentCompatibility(): CompatibilityScore[] {
+export async function calculateDepartmentCompatibility(): Promise<CompatibilityScore[]> {
   try {
     console.log('[Insights] Starting compatibility calculation...')
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
     
     console.log(`[Insights] Found ${deptData.length} departments`)
     
@@ -333,10 +327,10 @@ export function calculateDepartmentCompatibility(): CompatibilityScore[] {
   }
 }
 
-export function analyzeTeamComposition(): TeamComposition[] {
+export async function analyzeTeamComposition(): Promise<TeamComposition[]> {
   try {
     console.log('[Insights] Starting team composition analysis...')
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
     const compositions: TeamComposition[] = []
 
     deptData.forEach((dept) => {
@@ -421,10 +415,10 @@ export function analyzeTeamComposition(): TeamComposition[] {
   }
 }
 
-export function getCommunicationInsights(): CommunicationInsight[] {
+export async function getCommunicationInsights(): Promise<CommunicationInsight[]> {
   try {
     console.log('[Insights] Starting communication insights analysis...')
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
     const insights: CommunicationInsight[] = []
 
     const communicationStyles: Record<DISCType, { style: string; preferences: string[] }> = {
@@ -665,10 +659,10 @@ function calculateDetailedCompatibility(
   }
 }
 
-export function generateCompatibilityMatrix(): CompatibilityMatrixEntry[] {
+export async function generateCompatibilityMatrix(): Promise<CompatibilityMatrixEntry[]> {
   try {
     console.log('[Insights] Generating compatibility matrix...')
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
 
     if (deptData.length < 2) {
       console.log('[Insights] Not enough departments for compatibility matrix')
@@ -710,10 +704,10 @@ export function generateCompatibilityMatrix(): CompatibilityMatrixEntry[] {
   }
 }
 
-export function compareDepartmentProfiles(): ProfileComparison[] {
+export async function compareDepartmentProfiles(): Promise<ProfileComparison[]> {
   try {
     console.log('[Insights] Comparing department profiles...')
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
 
     if (deptData.length < 2) {
       console.log('[Insights] Not enough departments for profile comparison')
@@ -824,10 +818,10 @@ export function compareDepartmentProfiles(): ProfileComparison[] {
   }
 }
 
-export function generateCollaborationRecommendations(): CollaborationRecommendation[] {
+export async function generateCollaborationRecommendations(): Promise<CollaborationRecommendation[]> {
   try {
     console.log('[Insights] Generating collaboration recommendations...')
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
 
     if (deptData.length < 2) {
       console.log('[Insights] Not enough departments for recommendations')
@@ -1009,11 +1003,11 @@ export function generateCollaborationRecommendations(): CollaborationRecommendat
   }
 }
 
-export function getDepartmentCollaborationAnalysis(): DepartmentCollaborationAnalysis {
+export async function getDepartmentCollaborationAnalysis(): Promise<DepartmentCollaborationAnalysis> {
   try {
     console.log('[Insights] Starting comprehensive department collaboration analysis...')
     
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
     const departmentCount = deptData.length
     const totalPairs = departmentCount >= 2 ? (departmentCount * (departmentCount - 1)) / 2 : 0
 
@@ -1032,9 +1026,9 @@ export function getDepartmentCollaborationAnalysis(): DepartmentCollaborationAna
     }
 
     // Generate all analysis components
-    const compatibilityMatrix = generateCompatibilityMatrix()
-    const profileComparisons = compareDepartmentProfiles()
-    const recommendations = generateCollaborationRecommendations()
+    const compatibilityMatrix = await generateCompatibilityMatrix()
+    const profileComparisons = await compareDepartmentProfiles()
+    const recommendations = await generateCollaborationRecommendations()
 
     console.log('[Insights] Department collaboration analysis complete:', {
       departmentCount,

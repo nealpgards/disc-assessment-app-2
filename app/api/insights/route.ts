@@ -7,6 +7,10 @@ import {
   getDepartmentCollaborationAnalysis,
 } from '@/lib/insights'
 
+// Force dynamic rendering to prevent Next.js from trying to execute this during build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET() {
   console.log('[API] Insights endpoint called')
   
@@ -35,7 +39,7 @@ export async function GET() {
   try {
     // Get department data to provide metadata
     console.log('[API] Fetching department data...')
-    const deptData = getDepartmentData()
+    const deptData = await getDepartmentData()
     const departmentCount = deptData.length
     const totalResults = deptData.reduce((sum, dept) => sum + dept.count, 0)
 
@@ -48,7 +52,7 @@ export async function GET() {
     // Calculate each insight type independently to allow partial success
     try {
       console.log('[API] Calculating compatibility...')
-      result.compatibility = calculateDepartmentCompatibility()
+      result.compatibility = await calculateDepartmentCompatibility()
       console.log('[API] Compatibility calculated:', result.compatibility.length, 'pairs')
     } catch (compatError) {
       console.error('[API] Error calculating compatibility:', compatError)
@@ -57,7 +61,7 @@ export async function GET() {
 
     try {
       console.log('[API] Analyzing team composition...')
-      result.teamComposition = analyzeTeamComposition()
+      result.teamComposition = await analyzeTeamComposition()
       console.log('[API] Team composition analyzed:', result.teamComposition.length, 'departments')
     } catch (compError) {
       console.error('[API] Error analyzing team composition:', compError)
@@ -66,7 +70,7 @@ export async function GET() {
 
     try {
       console.log('[API] Getting communication insights...')
-      result.communicationInsights = getCommunicationInsights()
+      result.communicationInsights = await getCommunicationInsights()
       console.log('[API] Communication insights retrieved:', result.communicationInsights.length, 'departments')
     } catch (commError) {
       console.error('[API] Error getting communication insights:', commError)
@@ -76,7 +80,7 @@ export async function GET() {
     // Calculate comprehensive department collaboration analysis
     try {
       console.log('[API] Calculating department collaboration analysis...')
-      const collaborationAnalysis = getDepartmentCollaborationAnalysis()
+      const collaborationAnalysis = await getDepartmentCollaborationAnalysis()
       result.departmentCollaboration = collaborationAnalysis
       console.log('[API] Department collaboration analysis complete:', {
         matrixEntries: collaborationAnalysis.compatibilityMatrix.length,
