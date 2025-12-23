@@ -97,15 +97,15 @@ const DrivingForcesChart: React.FC<DrivingForcesChartProps> = ({ scores, title, 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {(title || subtitle) && (
-        <div className="text-center mb-2">
-          {title && <h3 className="text-lg font-semibold text-slate-800">{title}</h3>}
+        <div className="text-center mb-2 px-2">
+          {title && <h3 className="text-base sm:text-lg font-semibold text-slate-800">{title}</h3>}
           {subtitle && <p className="text-xs text-slate-600 mt-1">{subtitle}</p>}
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {DRIVING_FORCE_PAIRS.map((pair) => {
           const leftRaw = Number(scores[pair.leftCode] ?? 0)
           const rightRaw = Number(scores[pair.rightCode] ?? 0)
@@ -124,30 +124,30 @@ const DrivingForcesChart: React.FC<DrivingForcesChartProps> = ({ scores, title, 
 
           return (
             <div key={pair.motivator} className="space-y-2">
-              <div className="flex items-baseline justify-between">
+              <div className="flex items-baseline justify-between px-1">
                 <div className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   {pair.motivator}
                 </div>
-                <div className="text-[11px] font-medium text-slate-400">{pair.centerLabel}</div>
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-400">{pair.centerLabel}</div>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 sm:gap-4">
                 {/* Left side */}
-                <div className="flex flex-col items-center w-20">
+                <div className="flex flex-col items-center w-16 sm:w-20 flex-shrink-0">
                   <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white shadow-md"
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full text-xs sm:text-sm font-bold text-white shadow-md"
                     style={{ backgroundColor: pair.color }}
                   >
                     {leftPct}
                   </div>
-                  <div className="mt-1 text-center text-xs font-medium text-slate-700 leading-tight">
+                  <div className="mt-1 text-center text-[10px] sm:text-xs font-medium text-slate-700 leading-tight">
                     {pair.leftLabel}
                   </div>
                 </div>
 
                 {/* Scale */}
-                <div className="flex-1">
-                  <div className="relative flex h-7 items-center">
+                <div className="flex-1 min-w-0">
+                  <div className="relative flex h-6 sm:h-7 items-center">
                     {/* Base track */}
                     <div className="absolute inset-x-0 h-1 rounded-full bg-slate-200" />
 
@@ -165,7 +165,7 @@ const DrivingForcesChart: React.FC<DrivingForcesChartProps> = ({ scores, title, 
                     {[0, 25, 50, 75, 100].map((value) => (
                       <div
                         key={value}
-                        className="absolute h-3 w-px bg-slate-300"
+                        className="absolute h-2 sm:h-3 w-px bg-slate-300"
                         style={{
                           left: `${value}%`,
                           transform: 'translateX(-50%)',
@@ -175,7 +175,7 @@ const DrivingForcesChart: React.FC<DrivingForcesChartProps> = ({ scores, title, 
 
                     {/* Indicator knob */}
                     <div
-                      className="absolute h-4 w-4 rounded-full border-2 border-white shadow-md"
+                      className="absolute h-3 w-3 sm:h-4 sm:w-4 rounded-full border-2 border-white shadow-md"
                       style={{
                         left: `${indicatorPosition}%`,
                         transform: 'translateX(-50%)',
@@ -184,7 +184,7 @@ const DrivingForcesChart: React.FC<DrivingForcesChartProps> = ({ scores, title, 
                     />
                   </div>
 
-                  <div className="mt-1 flex justify-between text-[10px] text-slate-400">
+                  <div className="mt-1 flex justify-between text-[9px] sm:text-[10px] text-slate-400">
                     <span>0</span>
                     <span>25</span>
                     <span>50</span>
@@ -194,19 +194,19 @@ const DrivingForcesChart: React.FC<DrivingForcesChartProps> = ({ scores, title, 
                 </div>
 
                 {/* Right side */}
-                <div className="flex flex-col items-center w-20">
+                <div className="flex flex-col items-center w-16 sm:w-20 flex-shrink-0">
                   <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white shadow-md"
+                    className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full text-xs sm:text-sm font-bold text-white shadow-md"
                     style={{ backgroundColor: pair.color }}
                   >
                     {rightPct}
                   </div>
-                  <div className="mt-1 text-center text-xs font-medium text-slate-700 leading-tight">
+                  <div className="mt-1 text-center text-[10px] sm:text-xs font-medium text-slate-700 leading-tight">
                     {pair.rightLabel}
                   </div>
                 </div>
               </div>
-              <p className="text-[11px] leading-snug text-slate-500">
+              <p className="text-[10px] sm:text-[11px] leading-snug text-slate-500 px-1">
                 {pair.description}
               </p>
             </div>

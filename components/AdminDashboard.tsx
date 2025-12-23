@@ -62,6 +62,7 @@ interface DrivingForceResult {
 }
 
 interface Result {
+  id?: number
   name: string
   email?: string
   dept: string
@@ -601,22 +602,22 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
   }
 
   return (
-    <div ref={dashboardRef} className="min-h-screen bg-muted/20 py-10">
-      <div className="container max-w-7xl">
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
-          <div className="flex justify-between items-center mb-8">
+    <div ref={dashboardRef} className="min-h-screen bg-muted/20 py-4 sm:py-10 px-4">
+      <div className="container max-w-7xl mx-auto">
+        <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
-              <p className="text-slate-600">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
+              <p className="text-sm sm:text-base text-slate-600">
                 {allResults.length} assessments {selectedTeamCode ? `for team ${selectedTeamCode}` : '(all teams)'} • Natural & Adaptive Profiles
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
                 <select
                   value={selectedTeamCode}
                   onChange={(e) => setSelectedTeamCode(e.target.value)}
-                  className="px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="">All Teams</option>
                   {availableTeamCodes.map((code) => (
@@ -630,6 +631,7 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                 variant="outline"
                 onClick={refreshData}
                 disabled={loadingResults || loadingInsights}
+                className="w-full sm:w-auto"
               >
                 <RefreshCw className={`mr-2 h-4 w-4 ${loadingResults || loadingInsights ? 'animate-spin' : ''}`} />
                 Refresh
@@ -638,11 +640,13 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                 variant="outline"
                 onClick={handleExportPDF}
                 disabled={pdfStatus === 'generating'}
+                className="w-full sm:w-auto"
               >
                 <Download className="mr-2 h-4 w-4" />
-                {pdfStatus === 'generating' ? 'Generating PDF...' : 'Export to PDF'}
+                <span className="hidden sm:inline">{pdfStatus === 'generating' ? 'Generating PDF...' : 'Export to PDF'}</span>
+                <span className="sm:hidden">{pdfStatus === 'generating' ? 'Generating...' : 'Export PDF'}</span>
               </Button>
-              <Button onClick={() => router.push('/')}>+ New Assessment</Button>
+              <Button onClick={() => router.push('/')} className="w-full sm:w-auto">+ New Assessment</Button>
             </div>
           </div>
 
@@ -692,9 +696,9 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
           )}
 
           {/* Team Distribution */}
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-slate-50 rounded-xl p-6">
-              <h3 className="font-semibold text-slate-800 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <div className="bg-slate-50 rounded-xl p-4 sm:p-6">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">
                 Primary Type Distribution (Natural vs Adaptive)
               </h3>
               <ResponsiveContainer width="100%" height={250}>
@@ -710,23 +714,23 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-slate-50 rounded-xl p-6">
-              <h3 className="font-semibold text-slate-800 mb-4">Profile Shifters</h3>
+            <div className="bg-slate-50 rounded-xl p-4 sm:p-6">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Profile Shifters</h3>
               {shifters.length > 0 ? (
                 <div className="space-y-2 max-h-[220px] overflow-y-auto">
                   {shifters.map((r, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg">
-                      <span className="font-medium text-slate-700">{r.name}</span>
-                      <div className="flex items-center gap-2">
+                    <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg gap-2">
+                      <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">{r.name}</span>
+                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                         <span
-                          className="px-2 py-1 rounded text-white text-sm font-semibold"
+                          className="px-1.5 sm:px-2 py-1 rounded text-white text-xs sm:text-sm font-semibold"
                           style={{ backgroundColor: profileDescriptions[r.primaryNatural].color }}
                         >
                           {r.primaryNatural}
                         </span>
                         <span className="text-slate-400">→</span>
                         <span
-                          className="px-2 py-1 rounded text-white text-sm font-semibold"
+                          className="px-1.5 sm:px-2 py-1 rounded text-white text-xs sm:text-sm font-semibold"
                           style={{ backgroundColor: profileDescriptions[r.primaryAdaptive].color }}
                         >
                           {r.primaryAdaptive}
@@ -736,7 +740,7 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                   ))}
                 </div>
               ) : (
-                <p className="text-slate-500 text-center py-8">No profile shifters detected</p>
+                <p className="text-slate-500 text-center py-8 text-sm">No profile shifters detected</p>
               )}
               <div className="mt-4 p-3 bg-amber-50 rounded-lg">
                 <p className="text-xs text-amber-700">
@@ -751,83 +755,85 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
           </div>
 
           {/* Department Analysis */}
-          <div className="bg-slate-50 rounded-xl p-6 mb-8">
-            <h3 className="font-semibold text-slate-800 mb-4">Department Average Scores</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Department</th>
-                    <th className="text-center py-3 px-2 font-semibold text-slate-500">#</th>
-                    <th
-                      colSpan={4}
-                      className="text-center py-3 px-2 font-semibold text-emerald-700 bg-emerald-50"
-                    >
-                      Natural
-                    </th>
-                    <th
-                      colSpan={4}
-                      className="text-center py-3 px-2 font-semibold text-orange-700 bg-orange-50"
-                    >
-                      Adaptive
-                    </th>
-                  </tr>
-                  <tr className="border-b border-slate-100 text-xs">
-                    <th></th>
-                    <th></th>
-                    <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.D.color }}>
-                      D
-                    </th>
-                    <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.I.color }}>
-                      I
-                    </th>
-                    <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.S.color }}>
-                      S
-                    </th>
-                    <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.C.color }}>
-                      C
-                    </th>
-                    <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.D.color }}>
-                      D
-                    </th>
-                    <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.I.color }}>
-                      I
-                    </th>
-                    <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.S.color }}>
-                      S
-                    </th>
-                    <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.C.color }}>
-                      C
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {avgByDept.map((row, i) => (
-                    <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
-                      <td className="py-3 px-3 font-medium">{row.dept}</td>
-                      <td className="py-3 px-2 text-center text-slate-500">{row.count}</td>
-                      <td className="py-3 px-2 text-center bg-emerald-50/50">{row.D_nat}%</td>
-                      <td className="py-3 px-2 text-center bg-emerald-50/50">{row.I_nat}%</td>
-                      <td className="py-3 px-2 text-center bg-emerald-50/50">{row.S_nat}%</td>
-                      <td className="py-3 px-2 text-center bg-emerald-50/50">{row.C_nat}%</td>
-                      <td className="py-3 px-2 text-center bg-orange-50/50">{row.D_adp}%</td>
-                      <td className="py-3 px-2 text-center bg-orange-50/50">{row.I_adp}%</td>
-                      <td className="py-3 px-2 text-center bg-orange-50/50">{row.S_adp}%</td>
-                      <td className="py-3 px-2 text-center bg-orange-50/50">{row.C_adp}%</td>
+          <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Department Average Scores</h3>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <table className="w-full text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700">Department</th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-slate-500">#</th>
+                      <th
+                        colSpan={4}
+                        className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-emerald-700 bg-emerald-50 text-xs"
+                      >
+                        Natural
+                      </th>
+                      <th
+                        colSpan={4}
+                        className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-orange-700 bg-orange-50 text-xs"
+                      >
+                        Adaptive
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                    <tr className="border-b border-slate-100 text-xs">
+                      <th></th>
+                      <th></th>
+                      <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.D.color }}>
+                        D
+                      </th>
+                      <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.I.color }}>
+                        I
+                      </th>
+                      <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.S.color }}>
+                        S
+                      </th>
+                      <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.C.color }}>
+                        C
+                      </th>
+                      <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.D.color }}>
+                        D
+                      </th>
+                      <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.I.color }}>
+                        I
+                      </th>
+                      <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.S.color }}>
+                        S
+                      </th>
+                      <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.C.color }}>
+                        C
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {avgByDept.map((row, i) => (
+                      <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
+                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium">{row.dept}</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-slate-500">{row.count}</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.D_nat}%</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.I_nat}%</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.S_nat}%</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.C_nat}%</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.D_adp}%</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.I_adp}%</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.S_adp}%</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.C_adp}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           {/* Team Communication Styles */}
-          <div className="bg-slate-50 rounded-xl p-6 mb-8">
-            <h3 className="font-semibold text-slate-800 mb-2">How Your Team Likes to Communicate</h3>
-            <p className="text-slate-600 text-sm mb-4">
+          <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">How Your Team Likes to Communicate</h3>
+            <p className="text-slate-600 text-xs sm:text-sm mb-3 sm:mb-4">
               Based on each person&apos;s Natural DISC style. Use this view to tailor meetings, feedback, and messaging.
             </p>
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart
@@ -862,29 +868,29 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                   const guide = communicationGuides[type]
                   return (
                     <div key={type} className="bg-white rounded-lg p-3 border border-slate-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between mb-2 gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-xs font-bold text-white"
+                            className="inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-md text-xs font-bold text-white flex-shrink-0"
                             style={{ backgroundColor: profileDescriptions[type].color }}
                           >
                             {type}
                           </span>
-                          <div>
-                            <p className="text-sm font-semibold text-slate-800">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs sm:text-sm font-semibold text-slate-800">
                               {profileDescriptions[type].name}
                             </p>
-                            <p className="text-xs text-slate-500">{guide.styleLabel}</p>
+                            <p className="text-xs text-slate-500 truncate">{guide.styleLabel}</p>
                           </div>
                         </div>
-                        <span className="text-xs font-semibold text-slate-600">
+                        <span className="text-xs font-semibold text-slate-600 flex-shrink-0">
                           {count} {count === 1 ? 'person' : 'people'}
                         </span>
                       </div>
                       <ul className="mt-1 space-y-1 text-xs text-slate-600">
                         {guide.howToCommunicate.slice(0, 2).map((tip, idx) => (
                           <li key={idx} className="flex items-start gap-1.5">
-                            <span className="mt-[2px] text-emerald-500">✓</span>
+                            <span className="mt-[2px] text-emerald-500 flex-shrink-0">✓</span>
                             <span>{tip}</span>
                           </li>
                         ))}
@@ -897,111 +903,121 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
           </div>
 
           {/* All Results Table */}
-          <div className="bg-slate-50 rounded-xl p-6 mb-8">
-            <h3 className="font-semibold text-slate-800 mb-4">All Employee Results</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200">
-                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Name</th>
-                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Team Code</th>
-                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Dept</th>
-                    <th className="text-center py-3 px-2 font-semibold text-emerald-700">Natural</th>
-                    <th className="text-center py-3 px-2 font-semibold text-orange-700">Adaptive</th>
-                    <th className="text-center py-3 px-2 font-semibold text-slate-500">Shift?</th>
-                    <th className="text-center py-3 px-2" style={{ color: profileDescriptions.D.color }}>
-                      D
-                    </th>
-                    <th className="text-center py-3 px-2" style={{ color: profileDescriptions.I.color }}>
-                      I
-                    </th>
-                    <th className="text-center py-3 px-2" style={{ color: profileDescriptions.S.color }}>
-                      S
-                    </th>
-                    <th className="text-center py-3 px-2" style={{ color: profileDescriptions.C.color }}>
-                      C
-                    </th>
-                    <th className="text-left py-3 px-3 font-semibold text-slate-700">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allResults.map((r, i) => (
-                    <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
-                      <td className="py-3 px-3 font-medium">{r.name}</td>
-                      <td className="py-3 px-3">
-                        {r.teamCode ? (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
-                            {r.teamCode}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3">{r.dept}</td>
-                      <td className="py-3 px-2 text-center">
-                        <span
-                          className="px-2 py-1 rounded text-white text-xs font-bold"
-                          style={{ backgroundColor: profileDescriptions[r.primaryNatural].color }}
-                        >
-                          {r.primaryNatural}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        <span
-                          className="px-2 py-1 rounded text-white text-xs font-bold"
-                          style={{ backgroundColor: profileDescriptions[r.primaryAdaptive].color }}
-                        >
-                          {r.primaryAdaptive}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center">
-                        {r.primaryNatural !== r.primaryAdaptive ? '⚡' : '—'}
-                      </td>
-                      <td className="py-3 px-2 text-center text-xs">
-                        <span className="text-emerald-600">{r.natural.D}</span>/
-                        <span className="text-orange-600">{r.adaptive.D}</span>
-                      </td>
-                      <td className="py-3 px-2 text-center text-xs">
-                        <span className="text-emerald-600">{r.natural.I}</span>/
-                        <span className="text-orange-600">{r.adaptive.I}</span>
-                      </td>
-                      <td className="py-3 px-2 text-center text-xs">
-                        <span className="text-emerald-600">{r.natural.S}</span>/
-                        <span className="text-orange-600">{r.adaptive.S}</span>
-                      </td>
-                      <td className="py-3 px-2 text-center text-xs">
-                        <span className="text-emerald-600">{r.natural.C}</span>/
-                        <span className="text-orange-600">{r.adaptive.C}</span>
-                      </td>
-                      <td className="py-3 px-3 text-slate-500">{r.date}</td>
+          <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+            <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">All Employee Results</h3>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                <table className="w-full text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700">Name</th>
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700 hidden sm:table-cell">Team Code</th>
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700">Dept</th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-emerald-700">Natural</th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-orange-700">Adaptive</th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-slate-500">Shift?</th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.D.color }}>
+                        D
+                      </th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.I.color }}>
+                        I
+                      </th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.S.color }}>
+                        S
+                      </th>
+                      <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.C.color }}>
+                        C
+                      </th>
+                      <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700 hidden md:table-cell">Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {allResults.map((r, i) => (
+                      <tr
+                        key={i}
+                        className="border-b border-slate-100 hover:bg-slate-100 cursor-pointer transition-colors"
+                        onClick={() => {
+                          if (r.id) {
+                            router.push(`/admin/results/${r.id}`)
+                          }
+                        }}
+                      >
+                        <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium">{r.name}</td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-3 hidden sm:table-cell">
+                          {r.teamCode ? (
+                            <span className="px-1.5 sm:px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">
+                              {r.teamCode}
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 text-xs">—</span>
+                          )}
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-3">{r.dept}</td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
+                          <span
+                            className="px-1.5 sm:px-2 py-1 rounded text-white text-xs font-bold"
+                            style={{ backgroundColor: profileDescriptions[r.primaryNatural].color }}
+                          >
+                            {r.primaryNatural}
+                          </span>
+                        </td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
+                          <span
+                            className="px-1.5 sm:px-2 py-1 rounded text-white text-xs font-bold"
+                            style={{ backgroundColor: profileDescriptions[r.primaryAdaptive].color }}
+                          >
+                            {r.primaryAdaptive}
+                          </span>
+                        </td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
+                          {r.primaryNatural !== r.primaryAdaptive ? '⚡' : '—'}
+                        </td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                          <span className="text-emerald-600">{r.natural.D}</span>/
+                          <span className="text-orange-600">{r.adaptive.D}</span>
+                        </td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                          <span className="text-emerald-600">{r.natural.I}</span>/
+                          <span className="text-orange-600">{r.adaptive.I}</span>
+                        </td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                          <span className="text-emerald-600">{r.natural.S}</span>/
+                          <span className="text-orange-600">{r.adaptive.S}</span>
+                        </td>
+                        <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                          <span className="text-emerald-600">{r.natural.C}</span>/
+                          <span className="text-orange-600">{r.adaptive.C}</span>
+                        </td>
+                        <td className="py-2 sm:py-3 px-2 sm:px-3 text-slate-500 hidden md:table-cell">{r.date}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           {/* Driving Forces Analytics */}
           {hasDrivingForces && aggregatedDrivingForcesScores && (
-            <div className="border-t-2 border-slate-200 pt-8 mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">Team Driving Forces Profile</h2>
-              <p className="text-slate-600 text-sm mb-6 max-w-3xl">
+            <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Team Driving Forces Profile</h2>
+              <p className="text-slate-600 text-xs sm:text-sm mb-4 sm:mb-6 max-w-3xl">
                 Aggregated Driving Forces scores across all employees with Driving Forces data, showing where your team
                 collectively leans on each motivator pair.
               </p>
-              <div className="bg-slate-50 rounded-xl p-6">
+              <div className="bg-slate-50 rounded-xl p-4 sm:p-6">
                 <DrivingForcesChart
                   scores={aggregatedDrivingForcesScores}
                   title="Driving Forces (Team View)"
-                  subtitle="Each row shows your team’s relative pull toward each side of the motivator."
+                  subtitle="Each row shows your team's relative pull toward each side of the motivator."
                 />
               </div>
             </div>
           )}
 
           {/* Department Collaboration Analysis */}
-          <div className="border-t-2 border-slate-200 pt-8 mb-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6">Department Collaboration Analysis</h2>
+          <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6">Department Collaboration Analysis</h2>
             
             {loadingInsights && (
               <div className="bg-slate-50 rounded-xl p-6 mb-8">
@@ -1045,16 +1061,16 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                     </div>
 
                     {/* Compatibility Matrix Heatmap */}
-                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
-                      <h3 className="font-semibold text-slate-800 mb-4">Compatibility Matrix</h3>
+                    <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Compatibility Matrix</h3>
                       {departmentCollaboration.compatibilityMatrix &&
                       Array.isArray(departmentCollaboration.compatibilityMatrix) &&
                       departmentCollaboration.compatibilityMatrix.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-3 sm:space-y-4">
                           {/* Heatmap Grid */}
-                          <div className="bg-white rounded-lg p-4 border border-slate-200 overflow-x-auto">
-                            <div className="min-w-[600px]">
-                              <table className="w-full text-sm">
+                          <div className="bg-white rounded-lg p-3 sm:p-4 border border-slate-200 overflow-x-auto -mx-4 sm:mx-0">
+                            <div className="min-w-[500px] sm:min-w-[600px] px-4 sm:px-0">
+                              <table className="w-full text-xs sm:text-sm">
                                 <thead>
                                   <tr>
                                     <th className="text-left py-2 px-3 font-semibold text-slate-700"></th>
@@ -1147,23 +1163,23 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
 
                           {/* Detailed List */}
                           <div className="space-y-3">
-                            <h4 className="font-medium text-slate-700 text-sm">Detailed Compatibility Scores</h4>
+                            <h4 className="font-medium text-slate-700 text-xs sm:text-sm">Detailed Compatibility Scores</h4>
                             {departmentCollaboration.compatibilityMatrix
                               .sort((a, b) => b.score - a.score)
                               .map((entry, idx) => (
                                 <div
                                   key={idx}
-                                  className="bg-white rounded-lg p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                                  className="bg-white rounded-lg p-3 sm:p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
                                 >
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-3">
-                                      <span className="font-semibold text-slate-700">{entry.dept1}</span>
+                                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                                    <div className="flex items-center gap-2 sm:gap-3">
+                                      <span className="text-xs sm:text-sm font-semibold text-slate-700">{entry.dept1}</span>
                                       <span className="text-slate-400">↔</span>
-                                      <span className="font-semibold text-slate-700">{entry.dept2}</span>
+                                      <span className="text-xs sm:text-sm font-semibold text-slate-700">{entry.dept2}</span>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3">
                                       <div
-                                        className="text-2xl font-bold"
+                                        className="text-xl sm:text-2xl font-bold"
                                         style={{
                                           color:
                                             entry.score >= 80 ? '#10b981' : entry.score >= 60 ? '#f59e0b' : '#ef4444',
@@ -1172,7 +1188,7 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                                         {entry.score}%
                                       </div>
                                       <div
-                                        className={`w-16 h-16 rounded-full flex items-center justify-center text-white font-bold ${
+                                        className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base ${
                                           entry.score >= 80
                                             ? 'bg-emerald-500'
                                             : entry.score >= 60
@@ -1184,8 +1200,8 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                                       </div>
                                     </div>
                                   </div>
-                                  <p className="text-sm text-slate-600 mb-2">{entry.details.reasoning}</p>
-                                  <div className="flex gap-4 text-xs text-slate-500">
+                                  <p className="text-xs sm:text-sm text-slate-600 mb-2">{entry.details.reasoning}</p>
+                                  <div className="flex flex-col sm:flex-row sm:gap-4 gap-1 text-xs text-slate-500">
                                     <span>
                                       Natural: {entry.details.primaryType1} ↔ {entry.details.primaryType2} (
                                       {entry.details.naturalCompatibility}%)
@@ -1207,8 +1223,8 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                     </div>
 
                     {/* Profile Comparisons */}
-                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
-                      <h3 className="font-semibold text-slate-800 mb-4">Department Profile Comparisons</h3>
+                    <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Department Profile Comparisons</h3>
                       {departmentCollaboration.profileComparisons &&
                       Array.isArray(departmentCollaboration.profileComparisons) &&
                       departmentCollaboration.profileComparisons.length > 0 ? (
@@ -1328,8 +1344,8 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
                     </div>
 
                     {/* Collaboration Recommendations */}
-                    <div className="bg-slate-50 rounded-xl p-6 mb-8">
-                      <h3 className="font-semibold text-slate-800 mb-4">Collaboration Recommendations</h3>
+                    <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+                      <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Collaboration Recommendations</h3>
                       {departmentCollaboration.recommendations &&
                       Array.isArray(departmentCollaboration.recommendations) &&
                       departmentCollaboration.recommendations.length > 0 ? (
@@ -1402,9 +1418,9 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
           </div>
 
           {/* Export */}
-          <div className="bg-blue-50 rounded-xl p-5">
-            <h3 className="font-semibold text-blue-800 mb-2">Export Data</h3>
-            <p className="text-blue-700 text-sm mb-3">Copy this JSON for Notion import or further analysis:</p>
+          <div className="bg-blue-50 rounded-xl p-4 sm:p-5">
+            <h3 className="text-sm sm:text-base font-semibold text-blue-800 mb-2">Export Data</h3>
+            <p className="text-blue-700 text-xs sm:text-sm mb-3">Copy this JSON for Notion import or further analysis:</p>
             <textarea
               readOnly
               className="w-full h-32 p-3 text-xs font-mono bg-white border border-blue-200 rounded-lg"

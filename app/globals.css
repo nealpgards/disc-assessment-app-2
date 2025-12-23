@@ -72,3 +72,85 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* Print and PDF export optimizations */
+@media print {
+  /* Hide non-essential UI elements */
+  button,
+  [role="button"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  .page-break-before {
+    page-break-before: always;
+  }
+
+  .page-break-after {
+    page-break-after: always;
+  }
+
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Optimize colors for print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Ensure backgrounds print */
+  .bg-white,
+  .bg-slate-50,
+  .bg-emerald-50,
+  .bg-orange-50,
+  .bg-blue-50,
+  .bg-amber-50,
+  .bg-red-50,
+  .bg-sky-50,
+  .bg-rose-50 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Ensure charts and images render properly */
+  canvas,
+  svg,
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid;
+  }
+
+  /* Remove shadows for cleaner print */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure proper spacing */
+  body {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/* Styles for PDF generation (when html2canvas captures) */
+.pdf-export {
+  /* Ensure all colors are preserved */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide buttons during PDF generation */
+  button,
+  [role="button"] {
+    display: none !important;
+  }
+}

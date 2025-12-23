@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, FormEvent } from 'react'
+import React, { useState, FormEvent, useEffect } from 'react'
 
 import AdminDashboard from '@/components/AdminDashboard'
 import { Input } from '@/components/ui/input'
@@ -11,6 +11,25 @@ export default function AdminPage() {
   const [enteredTeamCode, setEnteredTeamCode] = useState('')
   const [activeTeamCode, setActiveTeamCode] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Check for team code in sessionStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedTeamCode = sessionStorage.getItem('adminTeamCode')
+      if (storedTeamCode) {
+        setActiveTeamCode(storedTeamCode)
+      }
+      
+      // Also check URL params
+      const urlParams = new URLSearchParams(window.location.search)
+      const urlTeamCode = urlParams.get('teamCode')
+      if (urlTeamCode) {
+        const normalized = urlTeamCode.trim().toUpperCase()
+        setActiveTeamCode(normalized)
+        sessionStorage.setItem('adminTeamCode', normalized)
+      }
+    }
+  }, [])
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -23,6 +42,10 @@ export default function AdminPage() {
 
     setError(null)
     setActiveTeamCode(normalized)
+    // Store team code in sessionStorage for admin context
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('adminTeamCode', normalized)
+    }
   }
 
   if (!activeTeamCode) {

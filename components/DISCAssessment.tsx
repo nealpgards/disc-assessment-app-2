@@ -1184,8 +1184,7 @@ export default function DISCAssessment() {
   const [pdfStatus, setPdfStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle')
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle')
   const [saveError, setSaveError] = useState<string | null>(null)
-  const barChartRef = useRef<HTMLDivElement>(null)
-  const radarChartRef = useRef<HTMLDivElement>(null)
+  const reportContainerRef = useRef<HTMLDivElement>(null)
 
   const handleMostSelection = (type: DISCType) => {
     setCurrentMostSelection(type)
@@ -1455,10 +1454,7 @@ export default function DISCAssessment() {
       // Wait a brief moment to ensure charts are fully rendered
       await new Promise((resolve) => setTimeout(resolve, 500))
 
-      await generatePDFReport(result, scores, {
-        barChart: barChartRef.current,
-        radarChart: radarChartRef.current,
-      })
+      await generatePDFReport(result, scores, reportContainerRef.current)
 
       setPdfStatus('success')
       // Reset status after 3 seconds
@@ -1813,14 +1809,14 @@ export default function DISCAssessment() {
     const communicationGuide = communicationGuides[scores.primaryNatural]
 
     return (
-      <div className="min-h-screen bg-muted/20 py-10">
-        <div className="container max-w-5xl">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-slate-800 mb-2">
+      <div className="min-h-screen bg-muted/20 py-4 sm:py-10 px-4">
+        <div className="container max-w-5xl mx-auto">
+          <div ref={reportContainerRef} className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8">
+            <div className="text-center mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-2">
                 Your Assessment Results
               </h1>
-              <p className="text-slate-600">
+              <p className="text-sm sm:text-base text-slate-600">
                 {employeeName} • {employeeDept}
               </p>
               {saveStatus === 'saving' && (
@@ -1840,33 +1836,33 @@ export default function DISCAssessment() {
             </div>
 
             {/* Primary Types */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
               <div
-                className="text-center p-6 rounded-xl"
+                className="text-center p-4 sm:p-6 rounded-xl"
                 style={{ backgroundColor: naturalProfile.bgColor }}
               >
-                <div className="text-sm font-semibold text-slate-600 mb-2">NATURAL STYLE</div>
-                <div className="text-5xl font-bold mb-2" style={{ color: naturalProfile.color }}>
+                <div className="text-xs sm:text-sm font-semibold text-slate-600 mb-2">NATURAL STYLE</div>
+                <div className="text-4xl sm:text-5xl font-bold mb-2" style={{ color: naturalProfile.color }}>
                   {scores.primaryNatural}
                 </div>
-                <div className="text-lg font-semibold text-slate-800">{naturalProfile.name}</div>
-                <p className="text-sm text-slate-600 mt-2">{naturalProfile.naturalDesc}</p>
+                <div className="text-base sm:text-lg font-semibold text-slate-800">{naturalProfile.name}</div>
+                <p className="text-xs sm:text-sm text-slate-600 mt-2">{naturalProfile.naturalDesc}</p>
               </div>
-              <div className="text-center p-6 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 border-2 border-dashed border-slate-300">
-                <div className="text-sm font-semibold text-slate-600 mb-2">ADAPTIVE STYLE (Under Stress)</div>
-                <div className="text-5xl font-bold mb-2" style={{ color: adaptiveProfile.color }}>
+              <div className="text-center p-4 sm:p-6 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 border-2 border-dashed border-slate-300">
+                <div className="text-xs sm:text-sm font-semibold text-slate-600 mb-2">ADAPTIVE STYLE (Under Stress)</div>
+                <div className="text-4xl sm:text-5xl font-bold mb-2" style={{ color: adaptiveProfile.color }}>
                   {scores.primaryAdaptive}
                 </div>
-                <div className="text-lg font-semibold text-slate-800">{adaptiveProfile.name}</div>
-                <p className="text-sm text-slate-600 mt-2">{adaptiveProfile.stressResponse}</p>
+                <div className="text-base sm:text-lg font-semibold text-slate-800">{adaptiveProfile.name}</div>
+                <p className="text-xs sm:text-sm text-slate-600 mt-2">{adaptiveProfile.stressResponse}</p>
               </div>
             </div>
 
             {/* Profile Shift Alert */}
             {profileShifted && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8">
-                <div className="font-semibold text-amber-800 mb-1">⚡ Profile Shift Detected</div>
-                <p className="text-sm text-amber-700">
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-4 mb-6 sm:mb-8">
+                <div className="text-sm sm:text-base font-semibold text-amber-800 mb-1">⚡ Profile Shift Detected</div>
+                <p className="text-xs sm:text-sm text-amber-700">
                   Your primary style shifts from <strong>{naturalProfile.name}</strong> to{' '}
                   <strong>{adaptiveProfile.name}</strong> under stress. This is common and indicates you adapt
                   your behavior significantly when facing pressure.
@@ -1875,9 +1871,9 @@ export default function DISCAssessment() {
             )}
 
             {/* Charts */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div ref={barChartRef} className="bg-slate-50 rounded-xl p-5">
-                <h3 className="font-semibold text-slate-800 mb-4 text-center">Natural vs Adaptive Comparison</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              <div className="bg-slate-50 rounded-xl p-3 sm:p-5">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4 text-center">Natural vs Adaptive Comparison</h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={comparisonData} barGap={2}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -1891,8 +1887,8 @@ export default function DISCAssessment() {
                 </ResponsiveContainer>
               </div>
 
-              <div ref={radarChartRef} className="bg-slate-50 rounded-xl p-5">
-                <h3 className="font-semibold text-slate-800 mb-4 text-center">Profile Radar</h3>
+              <div className="bg-slate-50 rounded-xl p-3 sm:p-5">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4 text-center">Profile Radar</h3>
                 <ResponsiveContainer width="100%" height={250}>
                   <RadarChart data={radarData}>
                     <PolarGrid />
@@ -1919,16 +1915,16 @@ export default function DISCAssessment() {
             </div>
 
             {/* Shift Analysis */}
-            <div className="bg-slate-50 rounded-xl p-5 mb-8">
-              <h3 className="font-semibold text-slate-800 mb-4">Stress Response Analysis</h3>
-              <div className="grid grid-cols-4 gap-4">
+            <div className="bg-slate-50 rounded-xl p-3 sm:p-5 mb-6 sm:mb-8">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Stress Response Analysis</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {shiftAnalysis.map((item) => (
                   <div key={item.type} className="text-center">
-                    <div className="text-sm font-medium text-slate-600 mb-1">{item.name}</div>
-                    <div className="flex items-center justify-center gap-2">
-                      <span className="text-emerald-600 font-semibold">{item.natural}%</span>
+                    <div className="text-xs sm:text-sm font-medium text-slate-600 mb-1">{item.name}</div>
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
+                      <span className="text-xs sm:text-sm text-emerald-600 font-semibold">{item.natural}%</span>
                       <span className="text-slate-400">→</span>
-                      <span className="text-orange-600 font-semibold">{item.adaptive}%</span>
+                      <span className="text-xs sm:text-sm text-orange-600 font-semibold">{item.adaptive}%</span>
                     </div>
                     <div
                       className={`text-xs font-semibold mt-1 ${
@@ -1943,14 +1939,14 @@ export default function DISCAssessment() {
             </div>
 
             {/* Score Details */}
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              <div className="bg-emerald-50 rounded-xl p-4">
-                <h4 className="font-semibold text-emerald-800 mb-3">Natural Style Scores</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 sm:mb-8">
+              <div className="bg-emerald-50 rounded-xl p-3 sm:p-4">
+                <h4 className="text-sm sm:text-base font-semibold text-emerald-800 mb-3">Natural Style Scores</h4>
                 <div className="space-y-2">
                   {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
-                    <div key={type} className="flex items-center gap-3">
+                    <div key={type} className="flex items-center gap-2 sm:gap-3">
                       <div
-                        className="w-20 text-sm font-medium"
+                        className="w-16 sm:w-20 text-xs sm:text-sm font-medium"
                         style={{ color: profileDescriptions[type].color }}
                       >
                         {profileDescriptions[type].name}
@@ -1964,18 +1960,18 @@ export default function DISCAssessment() {
                           }}
                         />
                       </div>
-                      <div className="w-12 text-right text-sm font-semibold">{scores.natural[type]}%</div>
+                      <div className="w-10 sm:w-12 text-right text-xs sm:text-sm font-semibold">{scores.natural[type]}%</div>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="bg-orange-50 rounded-xl p-4">
-                <h4 className="font-semibold text-orange-800 mb-3">Adaptive Style Scores</h4>
+              <div className="bg-orange-50 rounded-xl p-3 sm:p-4">
+                <h4 className="text-sm sm:text-base font-semibold text-orange-800 mb-3">Adaptive Style Scores</h4>
                 <div className="space-y-2">
                   {(['D', 'I', 'S', 'C'] as DISCType[]).map((type) => (
-                    <div key={type} className="flex items-center gap-3">
+                    <div key={type} className="flex items-center gap-2 sm:gap-3">
                       <div
-                        className="w-20 text-sm font-medium"
+                        className="w-16 sm:w-20 text-xs sm:text-sm font-medium"
                         style={{ color: profileDescriptions[type].color }}
                       >
                         {profileDescriptions[type].name}
@@ -1989,7 +1985,7 @@ export default function DISCAssessment() {
                           }}
                         />
                       </div>
-                      <div className="w-12 text-right text-sm font-semibold">{scores.adaptive[type]}%</div>
+                      <div className="w-10 sm:w-12 text-right text-xs sm:text-sm font-semibold">{scores.adaptive[type]}%</div>
                     </div>
                   ))}
                 </div>
@@ -1997,10 +1993,10 @@ export default function DISCAssessment() {
             </div>
 
             {/* Insights */}
-            <div className="space-y-4 mb-8">
-              <div className="bg-emerald-50 rounded-lg p-4">
-                <h3 className="font-semibold text-emerald-800 mb-2">💚 Your Natural Strengths</h3>
-                <p className="text-emerald-700 text-sm">{naturalProfile.naturalDesc}</p>
+            <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
+              <div className="bg-emerald-50 rounded-lg p-3 sm:p-4">
+                <h3 className="text-sm sm:text-base font-semibold text-emerald-800 mb-2">💚 Your Natural Strengths</h3>
+                <p className="text-emerald-700 text-xs sm:text-sm">{naturalProfile.naturalDesc}</p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {naturalProfile.traits.map((trait) => (
                     <span
@@ -2012,44 +2008,44 @@ export default function DISCAssessment() {
                   ))}
                 </div>
               </div>
-              <div className="bg-orange-50 rounded-lg p-4">
-                <h3 className="font-semibold text-orange-800 mb-2">⚡ Under Stress You May...</h3>
-                <p className="text-orange-700 text-sm">{adaptiveProfile.adaptiveDesc}</p>
+              <div className="bg-orange-50 rounded-lg p-3 sm:p-4">
+                <h3 className="text-sm sm:text-base font-semibold text-orange-800 mb-2">⚡ Under Stress You May...</h3>
+                <p className="text-orange-700 text-xs sm:text-sm">{adaptiveProfile.adaptiveDesc}</p>
               </div>
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-800 mb-2">🎯 Growth Opportunities</h3>
-                <p className="text-blue-700 text-sm">{naturalProfile.growth}</p>
+              <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
+                <h3 className="text-sm sm:text-base font-semibold text-blue-800 mb-2">🎯 Growth Opportunities</h3>
+                <p className="text-blue-700 text-xs sm:text-sm">{naturalProfile.growth}</p>
               </div>
             </div>
 
             {/* Communication Guidance */}
-            <div className="border-t-2 border-slate-200 pt-8 mb-8">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-slate-800 mb-1">How to Communicate With You</h2>
-                <p className="text-slate-600 text-sm">
+            <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-1">How to Communicate With You</h2>
+                <p className="text-slate-600 text-xs sm:text-sm">
                   Based primarily on your Natural style ({scores.primaryNatural} – {naturalProfile.name}).
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6 mb-6">
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                  <h3 className="font-semibold text-slate-800 mb-2">Do this when communicating with you</h3>
-                  <ul className="mt-2 space-y-2 text-sm text-slate-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+                <div className="bg-slate-50 rounded-xl p-3 sm:p-4 border border-slate-100">
+                  <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">Do this when communicating with you</h3>
+                  <ul className="mt-2 space-y-2 text-xs sm:text-sm text-slate-700">
                     {communicationGuide.howToCommunicate.map((tip, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="mt-[3px] text-emerald-500">✓</span>
+                        <span className="mt-[3px] text-emerald-500 flex-shrink-0">✓</span>
                         <span>{tip}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                <div className="bg-rose-50 rounded-xl p-4 border border-rose-100">
-                  <h3 className="font-semibold text-rose-800 mb-2">Avoid this when communicating with you</h3>
-                  <ul className="mt-2 space-y-2 text-sm text-rose-800">
+                <div className="bg-rose-50 rounded-xl p-3 sm:p-4 border border-rose-100">
+                  <h3 className="text-sm sm:text-base font-semibold text-rose-800 mb-2">Avoid this when communicating with you</h3>
+                  <ul className="mt-2 space-y-2 text-xs sm:text-sm text-rose-800">
                     {communicationGuide.howNotToCommunicate.map((tip, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="mt-[3px] text-rose-500">✕</span>
+                        <span className="mt-[3px] text-rose-500 flex-shrink-0">✕</span>
                         <span>{tip}</span>
                       </li>
                     ))}
@@ -2057,24 +2053,24 @@ export default function DISCAssessment() {
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl p-4 border border-slate-200">
-                  <h3 className="font-semibold text-slate-800 mb-2">How you likely see yourself</h3>
-                  <ul className="mt-1 space-y-2 text-sm text-slate-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200">
+                  <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">How you likely see yourself</h3>
+                  <ul className="mt-1 space-y-2 text-xs sm:text-sm text-slate-700">
                     {communicationGuide.selfPerception.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="mt-[3px] text-slate-400">•</span>
+                        <span className="mt-[3px] text-slate-400 flex-shrink-0">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-slate-200">
-                  <h3 className="font-semibold text-slate-800 mb-2">How others may see you</h3>
-                  <ul className="mt-1 space-y-2 text-sm text-slate-700">
+                <div className="bg-white rounded-xl p-3 sm:p-4 border border-slate-200">
+                  <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-2">How others may see you</h3>
+                  <ul className="mt-1 space-y-2 text-xs sm:text-sm text-slate-700">
                     {communicationGuide.othersPerception.map((item, idx) => (
                       <li key={idx} className="flex items-start gap-2">
-                        <span className="mt-[3px] text-slate-400">•</span>
+                        <span className="mt-[3px] text-slate-400 flex-shrink-0">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -2084,10 +2080,10 @@ export default function DISCAssessment() {
             </div>
 
             {/* Checklist for Communicating */}
-            <div className="border-t-2 border-slate-200 pt-8 mb-8">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Checklist for Communicating</h2>
-                <p className="text-slate-600 text-sm mb-4">
+            <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Checklist for Communicating</h2>
+                <p className="text-slate-600 text-xs sm:text-sm mb-3 sm:mb-4">
                   Most people are aware of and sensitive to the ways with which they prefer to be communicated. Many
                   people find this section to be extremely accurate and important for enhanced interpersonal
                   communication. This page provides other people with a list of things to DO when communicating with{' '}
@@ -2097,17 +2093,17 @@ export default function DISCAssessment() {
                 </p>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
-                <h3 className="text-lg font-semibold text-sky-600 mb-4">Ways to Communicate:</h3>
-                <ul className="space-y-3">
+              <div className="bg-slate-50 rounded-xl p-4 sm:p-6 border border-slate-200">
+                <h3 className="text-base sm:text-lg font-semibold text-sky-600 mb-3 sm:mb-4">Ways to Communicate:</h3>
+                <ul className="space-y-2 sm:space-y-3">
                   {communicationChecklists[scores.primaryNatural].waysToCommunicate.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
+                    <li key={idx} className="flex items-start gap-2 sm:gap-3">
                       <input
                         type="checkbox"
-                        className="mt-1 h-4 w-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500"
+                        className="mt-1 h-4 w-4 text-sky-600 border-slate-300 rounded focus:ring-sky-500 flex-shrink-0"
                         readOnly
                       />
-                      <span className="text-sm text-slate-700 flex-1">{item}</span>
+                      <span className="text-xs sm:text-sm text-slate-700 flex-1">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -2115,10 +2111,10 @@ export default function DISCAssessment() {
             </div>
 
             {/* Checklist for Communicating Continued */}
-            <div className="border-t-2 border-slate-200 pt-8 mb-8">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Checklist for Communicating Continued</h2>
-                <p className="text-slate-600 text-sm mb-4">
+            <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Checklist for Communicating Continued</h2>
+                <p className="text-slate-600 text-xs sm:text-sm mb-3 sm:mb-4">
                   This section of the report is a list of things NOT to do while communicating with {employeeName}.
                   Review each statement with {employeeName} and identify those methods of communication that result in
                   frustration or reduced performance. By sharing this information, both parties can negotiate a
@@ -2126,17 +2122,17 @@ export default function DISCAssessment() {
                 </p>
               </div>
 
-              <div className="bg-rose-50 rounded-xl p-6 border border-rose-200">
-                <h3 className="text-lg font-semibold text-rose-600 mb-4">Ways NOT to Communicate:</h3>
-                <ul className="space-y-3">
+              <div className="bg-rose-50 rounded-xl p-4 sm:p-6 border border-rose-200">
+                <h3 className="text-base sm:text-lg font-semibold text-rose-600 mb-3 sm:mb-4">Ways NOT to Communicate:</h3>
+                <ul className="space-y-2 sm:space-y-3">
                   {communicationChecklists[scores.primaryNatural].waysNotToCommunicate.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-3">
+                    <li key={idx} className="flex items-start gap-2 sm:gap-3">
                       <input
                         type="checkbox"
-                        className="mt-1 h-4 w-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500"
+                        className="mt-1 h-4 w-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500 flex-shrink-0"
                         readOnly
                       />
-                      <span className="text-sm text-rose-800 flex-1">{item}</span>
+                      <span className="text-xs sm:text-sm text-rose-800 flex-1">{item}</span>
                     </li>
                   ))}
                 </ul>
@@ -2144,10 +2140,10 @@ export default function DISCAssessment() {
             </div>
 
             {/* Perceptions: See Yourself as Others See You */}
-            <div className="border-t-2 border-slate-200 pt-8 mb-8">
-              <div className="mb-4">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Perceptions: See Yourself as Others See You</h2>
-                <p className="text-slate-600 text-sm mb-4">
+            <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+              <div className="mb-3 sm:mb-4">
+                <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Perceptions: See Yourself as Others See You</h2>
+                <p className="text-slate-600 text-xs sm:text-sm mb-3 sm:mb-4">
                   A person's behavior and feelings may be quickly telegraphed to others. This section provides additional
                   information on {employeeName}'s self-perception and how, under certain conditions, others may perceive
                   their behavior. Understanding this section will empower {employeeName} to project the image that will
@@ -2155,17 +2151,17 @@ export default function DISCAssessment() {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Self-Perception */}
-                <div className="bg-sky-50 rounded-xl p-5 border-2 border-sky-200">
-                  <h3 className="text-base font-semibold text-sky-800 mb-2 bg-sky-100 -m-5 mb-2 p-3 rounded-t-xl">
+                <div className="bg-sky-50 rounded-xl p-4 sm:p-5 border-2 border-sky-200">
+                  <h3 className="text-sm sm:text-base font-semibold text-sky-800 mb-2 bg-sky-100 -m-4 sm:-m-5 mb-2 p-3 rounded-t-xl">
                     Self-Perception
                   </h3>
                   <p className="text-xs text-slate-600 mb-3">{employeeName} usually sees themselves as being:</p>
                   <ul className="space-y-2">
                     {perceptionsData[scores.primaryNatural].selfPerception.map((item, idx) => (
-                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                        <span className="text-sky-600 mt-1">•</span>
+                      <li key={idx} className="text-xs sm:text-sm text-slate-700 flex items-start gap-2">
+                        <span className="text-sky-600 mt-1 flex-shrink-0">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -2173,8 +2169,8 @@ export default function DISCAssessment() {
                 </div>
 
                 {/* Others' Perception - Moderate */}
-                <div className="bg-amber-50 rounded-xl p-5 border-2 border-amber-200">
-                  <h3 className="text-base font-semibold text-amber-800 mb-2 bg-amber-100 -m-5 mb-2 p-3 rounded-t-xl">
+                <div className="bg-amber-50 rounded-xl p-4 sm:p-5 border-2 border-amber-200">
+                  <h3 className="text-sm sm:text-base font-semibold text-amber-800 mb-2 bg-amber-100 -m-4 sm:-m-5 mb-2 p-3 rounded-t-xl">
                     Others' Perception - Moderate
                   </h3>
                   <p className="text-xs text-slate-600 mb-3">
@@ -2182,8 +2178,8 @@ export default function DISCAssessment() {
                   </p>
                   <ul className="space-y-2">
                     {perceptionsData[scores.primaryNatural].othersPerceptionModerate.map((item, idx) => (
-                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                        <span className="text-amber-600 mt-1">•</span>
+                      <li key={idx} className="text-xs sm:text-sm text-slate-700 flex items-start gap-2">
+                        <span className="text-amber-600 mt-1 flex-shrink-0">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -2191,8 +2187,8 @@ export default function DISCAssessment() {
                 </div>
 
                 {/* Others' Perception - Extreme */}
-                <div className="bg-red-50 rounded-xl p-5 border-2 border-red-200">
-                  <h3 className="text-base font-semibold text-red-800 mb-2 bg-red-100 -m-5 mb-2 p-3 rounded-t-xl">
+                <div className="bg-red-50 rounded-xl p-4 sm:p-5 border-2 border-red-200">
+                  <h3 className="text-sm sm:text-base font-semibold text-red-800 mb-2 bg-red-100 -m-4 sm:-m-5 mb-2 p-3 rounded-t-xl">
                     Others' Perception - Extreme
                   </h3>
                   <p className="text-xs text-slate-600 mb-3">
@@ -2200,8 +2196,8 @@ export default function DISCAssessment() {
                   </p>
                   <ul className="space-y-2">
                     {perceptionsData[scores.primaryNatural].othersPerceptionExtreme.map((item, idx) => (
-                      <li key={idx} className="text-sm text-slate-700 flex items-start gap-2">
-                        <span className="text-red-600 mt-1">•</span>
+                      <li key={idx} className="text-xs sm:text-sm text-slate-700 flex items-start gap-2">
+                        <span className="text-red-600 mt-1 flex-shrink-0">•</span>
                         <span>{item}</span>
                       </li>
                     ))}
@@ -2212,16 +2208,16 @@ export default function DISCAssessment() {
 
             {/* Driving Forces Section */}
             {hasDrivingForces && drivingForceScores && (
-              <div className="border-t-2 border-slate-200 pt-8 mb-8">
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-slate-800 mb-2">Your Driving Forces</h2>
-                  <p className="text-slate-600 text-sm max-w-2xl mx-auto">
+              <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+                <div className="text-center mb-4 sm:mb-6">
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Your Driving Forces</h2>
+                  <p className="text-slate-600 text-xs sm:text-sm max-w-2xl mx-auto px-4">
                     These six scales show how strongly you lean toward each side of the core motivators that drive your
                     decisions and priorities.
                   </p>
                 </div>
 
-                <div className="bg-slate-50 rounded-xl p-6">
+                <div className="bg-slate-50 rounded-xl p-4 sm:p-6">
                   <DrivingForcesChart
                     scores={drivingForceScores.scores}
                     title="Driving Forces Profile"
@@ -2232,17 +2228,17 @@ export default function DISCAssessment() {
             )}
 
             <div className="space-y-3">
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 w-full sm:w-auto"
                   onClick={handleExportPDF}
                   disabled={pdfStatus === 'generating'}
                 >
                   <Download className="mr-2 h-4 w-4" />
                   {pdfStatus === 'generating' ? 'Generating PDF...' : 'Export to PDF'}
                 </Button>
-                <Button variant="secondary" className="flex-1" onClick={resetAssessment}>
+                <Button variant="secondary" className="flex-1 w-full sm:w-auto" onClick={resetAssessment}>
                   Take again
                 </Button>
               </div>
@@ -2334,23 +2330,23 @@ export default function DISCAssessment() {
     }
 
     return (
-      <div className="min-h-screen bg-muted/20 py-10">
-        <div className="container max-w-7xl">
-          <div className="bg-white rounded-2xl shadow-2xl p-8">
-            <div className="flex justify-between items-center mb-8">
+      <div className="min-h-screen bg-muted/20 py-4 sm:py-10 px-4">
+        <div className="container max-w-7xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-2xl p-4 sm:p-6 md:p-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
               <div>
-                <h1 className="text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
-                <p className="text-slate-600">
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
+                <p className="text-sm sm:text-base text-slate-600">
                   {allResults.length} assessments • Natural & Adaptive Profiles
                 </p>
               </div>
-              <Button onClick={resetAssessment}>+ New Assessment</Button>
+              <Button onClick={resetAssessment} className="w-full sm:w-auto">+ New Assessment</Button>
             </div>
 
             {/* Team Distribution */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="bg-slate-50 rounded-xl p-6">
-                <h3 className="font-semibold text-slate-800 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+              <div className="bg-slate-50 rounded-xl p-4 sm:p-6">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">
                   Primary Type Distribution (Natural vs Adaptive)
                 </h3>
                 <ResponsiveContainer width="100%" height={250}>
@@ -2366,23 +2362,23 @@ export default function DISCAssessment() {
                 </ResponsiveContainer>
               </div>
 
-              <div className="bg-slate-50 rounded-xl p-6">
-                <h3 className="font-semibold text-slate-800 mb-4">Profile Shifters</h3>
+              <div className="bg-slate-50 rounded-xl p-4 sm:p-6">
+                <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Profile Shifters</h3>
                 {shifters.length > 0 ? (
                   <div className="space-y-2 max-h-[220px] overflow-y-auto">
                     {shifters.map((r, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg">
-                        <span className="font-medium text-slate-700">{r.name}</span>
-                        <div className="flex items-center gap-2">
+                      <div key={i} className="flex items-center justify-between p-2 bg-white rounded-lg gap-2">
+                        <span className="text-xs sm:text-sm font-medium text-slate-700 truncate">{r.name}</span>
+                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                           <span
-                            className="px-2 py-1 rounded text-white text-sm font-semibold"
+                            className="px-1.5 sm:px-2 py-1 rounded text-white text-xs sm:text-sm font-semibold"
                             style={{ backgroundColor: profileDescriptions[r.primaryNatural].color }}
                           >
                             {r.primaryNatural}
                           </span>
                           <span className="text-slate-400">→</span>
                           <span
-                            className="px-2 py-1 rounded text-white text-sm font-semibold"
+                            className="px-1.5 sm:px-2 py-1 rounded text-white text-xs sm:text-sm font-semibold"
                             style={{ backgroundColor: profileDescriptions[r.primaryAdaptive].color }}
                           >
                             {r.primaryAdaptive}
@@ -2392,7 +2388,7 @@ export default function DISCAssessment() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-slate-500 text-center py-8">No profile shifters detected</p>
+                  <p className="text-slate-500 text-center py-8 text-sm">No profile shifters detected</p>
                 )}
                 <div className="mt-4 p-3 bg-amber-50 rounded-lg">
                   <p className="text-xs text-amber-700">
@@ -2407,161 +2403,165 @@ export default function DISCAssessment() {
             </div>
 
             {/* Department Analysis */}
-            <div className="bg-slate-50 rounded-xl p-6 mb-8">
-              <h3 className="font-semibold text-slate-800 mb-4">Department Average Scores</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-3 font-semibold text-slate-700">Department</th>
-                      <th className="text-center py-3 px-2 font-semibold text-slate-500">#</th>
-                      <th
-                        colSpan={4}
-                        className="text-center py-3 px-2 font-semibold text-emerald-700 bg-emerald-50"
-                      >
-                        Natural
-                      </th>
-                      <th
-                        colSpan={4}
-                        className="text-center py-3 px-2 font-semibold text-orange-700 bg-orange-50"
-                      >
-                        Adaptive
-                      </th>
-                    </tr>
-                    <tr className="border-b border-slate-100 text-xs">
-                      <th></th>
-                      <th></th>
-                      <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.D.color }}>
-                        D
-                      </th>
-                      <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.I.color }}>
-                        I
-                      </th>
-                      <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.S.color }}>
-                        S
-                      </th>
-                      <th className="py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.C.color }}>
-                        C
-                      </th>
-                      <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.D.color }}>
-                        D
-                      </th>
-                      <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.I.color }}>
-                        I
-                      </th>
-                      <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.S.color }}>
-                        S
-                      </th>
-                      <th className="py-2 text-center bg-orange-50" style={{ color: profileDescriptions.C.color }}>
-                        C
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {avgByDept.map((row, i) => (
-                      <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
-                        <td className="py-3 px-3 font-medium">{row.dept}</td>
-                        <td className="py-3 px-2 text-center text-slate-500">{row.count}</td>
-                        <td className="py-3 px-2 text-center bg-emerald-50/50">{row.D_nat}%</td>
-                        <td className="py-3 px-2 text-center bg-emerald-50/50">{row.I_nat}%</td>
-                        <td className="py-3 px-2 text-center bg-emerald-50/50">{row.S_nat}%</td>
-                        <td className="py-3 px-2 text-center bg-emerald-50/50">{row.C_nat}%</td>
-                        <td className="py-3 px-2 text-center bg-orange-50/50">{row.D_adp}%</td>
-                        <td className="py-3 px-2 text-center bg-orange-50/50">{row.I_adp}%</td>
-                        <td className="py-3 px-2 text-center bg-orange-50/50">{row.S_adp}%</td>
-                        <td className="py-3 px-2 text-center bg-orange-50/50">{row.C_adp}%</td>
+            <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Department Average Scores</h3>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700">Department</th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-slate-500">#</th>
+                        <th
+                          colSpan={4}
+                          className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-emerald-700 bg-emerald-50 text-xs"
+                        >
+                          Natural
+                        </th>
+                        <th
+                          colSpan={4}
+                          className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-orange-700 bg-orange-50 text-xs"
+                        >
+                          Adaptive
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      <tr className="border-b border-slate-100 text-xs">
+                        <th></th>
+                        <th></th>
+                        <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.D.color }}>
+                          D
+                        </th>
+                        <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.I.color }}>
+                          I
+                        </th>
+                        <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.S.color }}>
+                          S
+                        </th>
+                        <th className="py-1 sm:py-2 text-center bg-emerald-50" style={{ color: profileDescriptions.C.color }}>
+                          C
+                        </th>
+                        <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.D.color }}>
+                          D
+                        </th>
+                        <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.I.color }}>
+                          I
+                        </th>
+                        <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.S.color }}>
+                          S
+                        </th>
+                        <th className="py-1 sm:py-2 text-center bg-orange-50" style={{ color: profileDescriptions.C.color }}>
+                          C
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {avgByDept.map((row, i) => (
+                        <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
+                          <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium">{row.dept}</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-slate-500">{row.count}</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.D_nat}%</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.I_nat}%</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.S_nat}%</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-emerald-50/50">{row.C_nat}%</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.D_adp}%</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.I_adp}%</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.S_adp}%</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-orange-50/50">{row.C_adp}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
             {/* All Results Table */}
-            <div className="bg-slate-50 rounded-xl p-6 mb-8">
-              <h3 className="font-semibold text-slate-800 mb-4">All Employee Results</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200">
-                      <th className="text-left py-3 px-3 font-semibold text-slate-700">Name</th>
-                      <th className="text-left py-3 px-3 font-semibold text-slate-700">Dept</th>
-                      <th className="text-center py-3 px-2 font-semibold text-emerald-700">Natural</th>
-                      <th className="text-center py-3 px-2 font-semibold text-orange-700">Adaptive</th>
-                      <th className="text-center py-3 px-2 font-semibold text-slate-500">Shift?</th>
-                      <th className="text-center py-3 px-2" style={{ color: profileDescriptions.D.color }}>
-                        D
-                      </th>
-                      <th className="text-center py-3 px-2" style={{ color: profileDescriptions.I.color }}>
-                        I
-                      </th>
-                      <th className="text-center py-3 px-2" style={{ color: profileDescriptions.S.color }}>
-                        S
-                      </th>
-                      <th className="text-center py-3 px-2" style={{ color: profileDescriptions.C.color }}>
-                        C
-                      </th>
-                      <th className="text-left py-3 px-3 font-semibold text-slate-700">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allResults.map((r, i) => (
-                      <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
-                        <td className="py-3 px-3 font-medium">{r.name}</td>
-                        <td className="py-3 px-3">{r.dept}</td>
-                        <td className="py-3 px-2 text-center">
-                          <span
-                            className="px-2 py-1 rounded text-white text-xs font-bold"
-                            style={{ backgroundColor: profileDescriptions[r.primaryNatural].color }}
-                          >
-                            {r.primaryNatural}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <span
-                            className="px-2 py-1 rounded text-white text-xs font-bold"
-                            style={{ backgroundColor: profileDescriptions[r.primaryAdaptive].color }}
-                          >
-                            {r.primaryAdaptive}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          {r.primaryNatural !== r.primaryAdaptive ? '⚡' : '—'}
-                        </td>
-                        <td className="py-3 px-2 text-center text-xs">
-                          <span className="text-emerald-600">{r.natural.D}</span>/
-                          <span className="text-orange-600">{r.adaptive.D}</span>
-                        </td>
-                        <td className="py-3 px-2 text-center text-xs">
-                          <span className="text-emerald-600">{r.natural.I}</span>/
-                          <span className="text-orange-600">{r.adaptive.I}</span>
-                        </td>
-                        <td className="py-3 px-2 text-center text-xs">
-                          <span className="text-emerald-600">{r.natural.S}</span>/
-                          <span className="text-orange-600">{r.adaptive.S}</span>
-                        </td>
-                        <td className="py-3 px-2 text-center text-xs">
-                          <span className="text-emerald-600">{r.natural.C}</span>/
-                          <span className="text-orange-600">{r.adaptive.C}</span>
-                        </td>
-                        <td className="py-3 px-3 text-slate-500">{r.date}</td>
+            <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+              <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">All Employee Results</h3>
+              <div className="overflow-x-auto -mx-4 sm:mx-0">
+                <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-200">
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700">Name</th>
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700">Dept</th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-emerald-700">Natural</th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-orange-700">Adaptive</th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2 font-semibold text-slate-500">Shift?</th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.D.color }}>
+                          D
+                        </th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.I.color }}>
+                          I
+                        </th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.S.color }}>
+                          S
+                        </th>
+                        <th className="text-center py-2 sm:py-3 px-1 sm:px-2" style={{ color: profileDescriptions.C.color }}>
+                          C
+                        </th>
+                        <th className="text-left py-2 sm:py-3 px-2 sm:px-3 font-semibold text-slate-700 hidden md:table-cell">Date</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {allResults.map((r, i) => (
+                        <tr key={i} className="border-b border-slate-100 hover:bg-slate-100">
+                          <td className="py-2 sm:py-3 px-2 sm:px-3 font-medium">{r.name}</td>
+                          <td className="py-2 sm:py-3 px-2 sm:px-3">{r.dept}</td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
+                            <span
+                              className="px-1.5 sm:px-2 py-1 rounded text-white text-xs font-bold"
+                              style={{ backgroundColor: profileDescriptions[r.primaryNatural].color }}
+                            >
+                              {r.primaryNatural}
+                            </span>
+                          </td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
+                            <span
+                              className="px-1.5 sm:px-2 py-1 rounded text-white text-xs font-bold"
+                              style={{ backgroundColor: profileDescriptions[r.primaryAdaptive].color }}
+                            >
+                              {r.primaryAdaptive}
+                            </span>
+                          </td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center">
+                            {r.primaryNatural !== r.primaryAdaptive ? '⚡' : '—'}
+                          </td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                            <span className="text-emerald-600">{r.natural.D}</span>/
+                            <span className="text-orange-600">{r.adaptive.D}</span>
+                          </td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                            <span className="text-emerald-600">{r.natural.I}</span>/
+                            <span className="text-orange-600">{r.adaptive.I}</span>
+                          </td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                            <span className="text-emerald-600">{r.natural.S}</span>/
+                            <span className="text-orange-600">{r.adaptive.S}</span>
+                          </td>
+                          <td className="py-2 sm:py-3 px-1 sm:px-2 text-center text-xs">
+                            <span className="text-emerald-600">{r.natural.C}</span>/
+                            <span className="text-orange-600">{r.adaptive.C}</span>
+                          </td>
+                          <td className="py-2 sm:py-3 px-2 sm:px-3 text-slate-500 hidden md:table-cell">{r.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
             {/* Driving Forces Analytics */}
             {allResults.some((r) => r.drivingForces) && (
               <>
-                <div className="border-t-2 border-slate-200 pt-8 mb-8">
-                  <h2 className="text-2xl font-bold text-slate-800 mb-6">Driving Forces Analytics</h2>
+                <div className="border-t-2 border-slate-200 pt-6 sm:pt-8 mb-6 sm:mb-8">
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-4 sm:mb-6">Driving Forces Analytics</h2>
 
                   {/* Driving Forces Distribution */}
-                  <div className="bg-slate-50 rounded-xl p-6 mb-8">
-                    <h3 className="font-semibold text-slate-800 mb-4">Primary Driving Forces Distribution</h3>
-                    <div className="grid md:grid-cols-2 gap-6">
+                  <div className="bg-slate-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+                    <h3 className="text-sm sm:text-base font-semibold text-slate-800 mb-3 sm:mb-4">Primary Driving Forces Distribution</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       {(['Knowledge', 'Utility', 'Surroundings', 'Others', 'Power', 'Methodologies'] as MotivatorType[]).map(
                         (motivator) => {
                           const resultsWithDF = allResults.filter((r) => r.drivingForces)
@@ -2612,14 +2612,14 @@ export default function DISCAssessment() {
                           const option2Desc = drivingForceDescriptions[option2Type as DrivingForceType]
 
                           return (
-                            <div key={motivator} className="bg-white rounded-lg p-4 border">
-                              <h4 className="font-semibold text-slate-700 mb-3">{motivator}</h4>
+                            <div key={motivator} className="bg-white rounded-lg p-3 sm:p-4 border">
+                              <h4 className="text-sm sm:text-base font-semibold text-slate-700 mb-2 sm:mb-3">{motivator}</h4>
                               <div className="space-y-2">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-32 text-xs font-medium" style={{ color: option1Desc.color }}>
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                  <div className="w-24 sm:w-32 text-xs font-medium" style={{ color: option1Desc.color }}>
                                     {option1Desc.name}
                                   </div>
-                                  <div className="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
+                                  <div className="flex-1 h-3 sm:h-4 bg-slate-200 rounded-full overflow-hidden">
                                     <div
                                       className="h-full rounded-full"
                                       style={{
@@ -2628,15 +2628,15 @@ export default function DISCAssessment() {
                                       }}
                                     />
                                   </div>
-                                  <div className="w-12 text-right text-xs font-semibold">
+                                  <div className="w-10 sm:w-12 text-right text-xs font-semibold">
                                     {distribution.option1} ({Math.round((distribution.option1 / resultsWithDF.length) * 100)}%)
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <div className="w-32 text-xs font-medium" style={{ color: option2Desc.color }}>
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                  <div className="w-24 sm:w-32 text-xs font-medium" style={{ color: option2Desc.color }}>
                                     {option2Desc.name}
                                   </div>
-                                  <div className="flex-1 h-4 bg-slate-200 rounded-full overflow-hidden">
+                                  <div className="flex-1 h-3 sm:h-4 bg-slate-200 rounded-full overflow-hidden">
                                     <div
                                       className="h-full rounded-full"
                                       style={{
@@ -2645,7 +2645,7 @@ export default function DISCAssessment() {
                                       }}
                                     />
                                   </div>
-                                  <div className="w-12 text-right text-xs font-semibold">
+                                  <div className="w-10 sm:w-12 text-right text-xs font-semibold">
                                     {distribution.option2} ({Math.round((distribution.option2 / resultsWithDF.length) * 100)}%)
                                   </div>
                                 </div>

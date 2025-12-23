@@ -82,6 +82,39 @@ function normalizeDepartmentName(dept: string): string {
   return dept.trim()
 }
 
+// Helper function to check if an assessment is completed
+function isAssessmentCompleted(result: ResultRow): boolean {
+  if (!result) return false
+  
+  // Check that all required fields exist and are valid
+  const hasValidNaturalScores = 
+    typeof result.natural_D === 'number' && !isNaN(result.natural_D) &&
+    typeof result.natural_I === 'number' && !isNaN(result.natural_I) &&
+    typeof result.natural_S === 'number' && !isNaN(result.natural_S) &&
+    typeof result.natural_C === 'number' && !isNaN(result.natural_C)
+  
+  const hasValidAdaptiveScores = 
+    typeof result.adaptive_D === 'number' && !isNaN(result.adaptive_D) &&
+    typeof result.adaptive_I === 'number' && !isNaN(result.adaptive_I) &&
+    typeof result.adaptive_S === 'number' && !isNaN(result.adaptive_S) &&
+    typeof result.adaptive_C === 'number' && !isNaN(result.adaptive_C)
+  
+  const hasValidPrimaryTypes = 
+    result.primary_natural && 
+    typeof result.primary_natural === 'string' &&
+    ['D', 'I', 'S', 'C'].includes(result.primary_natural) &&
+    result.primary_adaptive &&
+    typeof result.primary_adaptive === 'string' &&
+    ['D', 'I', 'S', 'C'].includes(result.primary_adaptive)
+  
+  const hasValidDepartment = 
+    result.department && 
+    typeof result.department === 'string' && 
+    normalizeDepartmentName(result.department).length > 0
+  
+  return hasValidNaturalScores && hasValidAdaptiveScores && hasValidPrimaryTypes && hasValidDepartment
+}
+
 // Export for use in API routes
 export async function getDepartmentData(): Promise<DepartmentData[]> {
   try {
@@ -92,8 +125,22 @@ export async function getDepartmentData(): Promise<DepartmentData[]> {
       return []
     }
     
-    // Filter out empty or null departments
-    const validResults = results.filter((r) => {
+    // Filter to only include completed assessments
+    const completedResults = results.filter(isAssessmentCompleted)
+    
+    console.log('[Insights] Filtered results:', {
+      totalResults: results.length,
+      completedResults: completedResults.length,
+      incompleteResults: results.length - completedResults.length,
+    })
+    
+    if (completedResults.length === 0) {
+      console.log('[Insights] No completed assessments found')
+      return []
+    }
+    
+    // Filter out empty or null departments (should already be handled by isAssessmentCompleted, but double-check)
+    const validResults = completedResults.filter((r) => {
       return r && r.department && typeof r.department === 'string' && normalizeDepartmentName(r.department).length > 0
     })
     
@@ -147,20 +194,11 @@ export async function getDepartmentData(): Promise<DepartmentData[]> {
         return null
       }
 
-      // Validate that all required fields exist
-      const validDeptResults = deptResults.filter(r => 
-        typeof r.natural_D === 'number' && 
-        typeof r.natural_I === 'number' &&
-        typeof r.natural_S === 'number' &&
-        typeof r.natural_C === 'number' &&
-        typeof r.adaptive_D === 'number' &&
-        typeof r.adaptive_I === 'number' &&
-        typeof r.adaptive_S === 'number' &&
-        typeof r.adaptive_C === 'number'
-      )
+      // Ensure all results are completed assessments (should already be filtered, but double-check)
+      const validDeptResults = deptResults.filter(isAssessmentCompleted)
 
       if (validDeptResults.length === 0) {
-        console.warn(`[Insights] No valid results with scores for department: ${dept}`)
+        console.warn(`[Insights] No completed assessments found for department: ${dept}`)
         return null
       }
 

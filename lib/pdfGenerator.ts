@@ -397,99 +397,144 @@ const addWrappedText = (
 export async function generatePDFReport(
   result: Result,
   scores: CalculatedScores,
-  chartElements?: { barChart?: HTMLElement | null; radarChart?: HTMLElement | null }
+  reportElement?: HTMLElement | null
 ): Promise<void> {
+  if (!reportElement) {
+    console.error('Report element is required for PDF generation')
+    return
+  }
+
   const doc = new jsPDF('p', 'mm', 'a4')
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const margin = 15
-  const contentWidth = pageWidth - 2 * margin
-  let yPos = margin
 
-  // Small helper to keep sections from running off the page
-  const ensureSpace = (requiredSpace: number) => {
-    if (yPos + requiredSpace > pageHeight - margin) {
-      doc.addPage()
-      yPos = margin
-    }
-  }
+  try {
+    // Use html2canvas to capture the entire report element with high quality
+    const canvas = await html2canvas(reportElement, {
+      backgroundColor: '#ffffff',
+      scale: 3, // Higher scale for better quality
+      useCORS: true,
+      logging: false,
+      allowTaint: false,
+      windowWidth: reportElement.scrollWidth,
+      windowHeight: reportElement.scrollHeight,
+    })
 
-  // Capture chart images if provided
-  let barChartImage: { src: string; width: number; height: number } | null = null
-  let radarChartImage: { src: string; width: number; height: number } | null = null
+    const imgData = canvas.toDataURL('image/png', 1.0)
+    const imgWidth = pageWidth
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
 
-  if (chartElements?.barChart) {
-    try {
-      const canvas = await html2canvas(chartElements.barChart, {
-        backgroundColor: '#f8fafc',
-        scale: 2,
-      })
-      barChartImage = {
-        src: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
+    // Calculate how many pages we need
+    const totalPages = Math.ceil(imgHeight / pageHeight)
+
+    // Add the first page
+    doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST')
+
+    // If content spans multiple pages, add additional pages
+    if (totalPages > 1) {
+      for (let i = 1; i < totalPages; i++) {
+        doc.addPage()
+        const yPosition = -(i * pageHeight)
+        doc.addImage(imgData, 'PNG', 0, yPosition, imgWidth, imgHeight, undefined, 'FAST')
       }
-    } catch (error) {
-      console.error('Failed to capture bar chart:', error)
     }
-  }
 
-  if (chartElements?.radarChart) {
-    try {
-      const canvas = await html2canvas(chartElements.radarChart, {
-        backgroundColor: '#f8fafc',
-        scale: 2,
+    // Add page numbers
+    const totalPagesFinal = doc.getNumberOfPages()
+    for (let page = 1; page <= totalPagesFinal; page++) {
+      doc.setPage(page)
+      doc.setFontSize(9)
+      doc.setTextColor(100, 100, 100)
+      doc.text(`Page ${page} of ${totalPagesFinal}`, pageWidth - 30, pageHeight - 10, {
+        align: 'right',
       })
-      radarChartImage = {
-        src: canvas.toDataURL('image/png'),
-        width: canvas.width,
-        height: canvas.height,
-      }
-    } catch (error) {
-      console.error('Failed to capture radar chart:', error)
     }
+
+    // Save the PDF
+    const fileName = `DISC_Assessment_${result.name.replace(/\s+/g, '_')}_${result.date}.pdf`
+    doc.save(fileName)
+  } catch (error) {
+    console.error('Failed to generate PDF:', error)
+    throw error
   }
+}
 
-  const naturalProfile = profileDescriptions[scores.primaryNatural]
-  const adaptiveProfile = profileDescriptions[scores.primaryAdaptive]
-  const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
+interface AdminDashboardData {
+  teamNaturalDist: Array<{ name: string; fullName: string; natural: number; adaptive: number; fill: string }>
+  avgByDept: Array<{
+    dept: string
+    count: number
+    D_nat: number
+    I_nat: number
+    S_nat: number
+    C_nat: number
+    D_adp: number
+    I_adp: number
+    S_adp: number
+    C_adp: number
+  }>
+  shifters: Result[]
+}
 
-  const hasDrivingForces = !!result.drivingForces
-  const discTypes: DISCType[] = ['D', 'I', 'S', 'C']
+interface AdminDepartmentCollaboration {
+  compatibilityMatrix: Array<{
+    dept1: string
+    dept2: string
+    score: number
+    details: {
+      primaryType1: DISCType
+      primaryType2: DISCType
+      naturalCompatibility: number
+      adaptiveCompatibility: number
+      scoreDifference: number
+      reasoning: string
+    }
+  }>
+  profileComparisons: Array<{
+    dept1: string
+    dept2: string
+    comparison: {
+      natural: {
+        dept1Scores: Scores
+        dept2Scores: Scores
+        differences: Scores
+        primaryType1: DISCType
+        primaryType2: DISCType
+      }
+      adaptive: {
+        dept1Scores: Scores
+        dept2Scores: Scores
+        differences: Scores
+        primaryType1: DISCType
+        primaryType2: DISCType
+      }
+      summary: string
+    }
+  }>
+  recommendations: Array<{
+    dept1: string
+    dept2: string
+    recommendations: Array<{
+      text: string
+      priority: 'high' | 'medium' | 'low'
+      category: 'communication' | 'workflow' | 'conflict' | 'synergy'
+    }>
+  }>
+  metadata: {
+    departmentCount: number
+    totalPairs: number
+    available: boolean
+  }
+}
 
-  // ========== PAGE 1: OVERVIEW (mirror web results header) ==========
-  doc.setFillColor(248, 250, 252) // slate-50 background
-  doc.rect(0, 0, pageWidth, pageHeight, 'F')
+interface AdminInsights {
+  compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
+  teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
+  communicationInsights: Array<{ department: string; style: string; preferences: string[]; recommendations: string[] }>
+  departmentCollaboration?: AdminDepartmentCollaboration
+}
 
-  // Title + person info
-  yPos = 28
-  doc.setFontSize(22)
-  doc.setTextColor(15, 23, 42) // slate-900
-  doc.setFont('helvetica', 'bold')
-  doc.text('Your Assessment Results', pageWidth / 2, yPos, { align: 'center' })
-
-  yPos += 8
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(71, 85, 105) // slate-600
-  doc.text(`${result.name} • ${result.dept}`, pageWidth / 2, yPos, { align: 'center' })
-
-  yPos += 6
-  const formattedDate = new Date(result.date).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-  doc.text(`Assessment Date: ${formattedDate}`, pageWidth / 2, yPos, { align: 'center' })
-
-  // Primary style cards (natural / adaptive) – compact, side by side
-  yPos += 14
-  const primaryBoxWidth = (contentWidth - 10) / 2
-  const primaryBoxHeight = 55
-
-  // Natural Style card
-  const naturalX = margin
-  const [nr, ng, nb] = hexToRgb(naturalProfile.color)
+export async function generateAdminDashboardPDF(
   const [nrBgR, nrBgG, nrBgB] = hexToRgb(naturalProfile.bgColor)
   doc.setFillColor(nrBgR, nrBgG, nrBgB)
   doc.roundedRect(naturalX, yPos, primaryBoxWidth, primaryBoxHeight, 3, 3, 'F')
