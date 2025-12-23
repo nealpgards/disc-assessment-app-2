@@ -105,5 +105,24 @@ export const dbInstance = {
 
     return (data || []) as ResultRow[]
   },
+
+  // Get a single result by ID
+  async getResultById(id: number): Promise<ResultRow | null> {
+    const { data, error } = await supabase
+      .from('results')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null
+      }
+      throw error
+    }
+
+    return data as ResultRow
+  },
 }
 
