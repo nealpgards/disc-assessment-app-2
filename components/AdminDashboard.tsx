@@ -303,6 +303,7 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
   const [allResults, setAllResults] = useState<Result[]>([])
   const [selectedTeamCode, setSelectedTeamCode] = useState<string>(initialTeamCode || '')
   const [availableTeamCodes, setAvailableTeamCodes] = useState<string[]>([])
+  const [totalResultCount, setTotalResultCount] = useState<number>(0)
   const [insights, setInsights] = useState<{
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
     teamComposition: Array<{ department: string; strengths: string[]; gaps: string[]; recommendations: string[] }>
@@ -337,6 +338,7 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
         throw new Error(`Failed to fetch results: ${allRes.status} ${allRes.statusText}`)
       }
       const allData = await allRes.json()
+      setTotalResultCount(Array.isArray(allData) ? allData.length : 0)
       
       // Extract unique team codes from all results
       const teamCodes = [...new Set(allData.map((r: Result) => r.teamCode).filter(Boolean))] as string[]
@@ -552,7 +554,9 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
         }, {})
     : null
 
-  if (allResults.length === 0 && !loadingResults) {
+  if (!loadingResults && allResults.length === 0) {
+    const hasAnyResults = totalResultCount > 0
+
     return (
       <div className="min-h-screen bg-muted/20 py-10">
         <div className="container max-w-7xl">
@@ -560,13 +564,35 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
             <div className="flex justify-between items-center mb-8">
               <div>
                 <h1 className="text-3xl font-bold text-slate-800">Team Analytics Dashboard</h1>
-                <p className="text-slate-600">No assessments yet</p>
+                <p className="text-slate-600">
+                  {hasAnyResults
+                    ? selectedTeamCode
+                      ? `No assessments found for team ${selectedTeamCode}.`
+                      : 'No assessments found for the current filter.'
+                    : 'No assessments yet'}
+                </p>
               </div>
               <Button onClick={() => router.push('/')}>+ New Assessment</Button>
             </div>
             <div className="text-center py-20">
-              <p className="text-slate-500 mb-4">No assessment results found.</p>
-              <Button onClick={() => router.push('/')}>Start First Assessment</Button>
+              <p className="text-slate-500 mb-4">
+                {hasAnyResults && selectedTeamCode
+                  ? `We found ${totalResultCount} assessment${totalResultCount === 1 ? '' : 's'} overall, but none for team ${selectedTeamCode}.`
+                  : 'No assessment results found.'}
+              </p>
+              {hasAnyResults ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Button variant="outline" onClick={() => setSelectedTeamCode('')}>
+                    View all teams
+                  </Button>
+                  <p className="text-xs text-slate-500">
+                    Double-check the team code used in the assessment (for example, DTG01) or clear the filter to see all
+                    results.
+                  </p>
+                </div>
+              ) : (
+                <Button onClick={() => router.push('/')}>Start First Assessment</Button>
+              )}
             </div>
           </div>
         </div>

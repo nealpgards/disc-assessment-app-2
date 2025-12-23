@@ -192,6 +192,162 @@ const communicationGuides: Record<DISCType, CommunicationGuide> = {
   },
 }
 
+// Communication Checklists - Detailed checklists for communicating with each DISC type
+const communicationChecklists: Record<DISCType, { waysToCommunicate: string[]; waysNotToCommunicate: string[] }> = {
+  D: {
+    waysToCommunicate: [
+      'Understand their sporadic listening skills.',
+      'Put projects in writing, with deadlines.',
+      'Be specific and leave nothing to chance.',
+      'Be open, honest and informal.',
+      'Expect acceptance without a lot of questions.',
+      'Be isolated from interruptions.',
+      'Ask specific (preferably "what?") questions.',
+      'Support the results, not the person, if you agree.',
+      'Provide time for fun and relaxing.',
+      'Use their jargon.',
+      'Provide questions, alternatives and choices for making their own decisions.',
+      'Read the body language--look for impatience or disapproval.',
+      'Stick to business--let them decide if they want to talk socially.',
+    ],
+    waysNotToCommunicate: [
+      'Ask rhetorical questions, or useless ones.',
+      'Try to build personal relationships.',
+      'Try to convince by "personal" means.',
+      'Reinforce agreement with "I\'m with you."',
+      'Let them change the topic until you are finished.',
+      'Be put off by their "cockiness."',
+      'Ramble on, or waste their time.',
+      'Dictate to them.',
+      'Forget or lose things, be disorganized or messy, confuse or distract their mind from business.',
+      'Let disagreement reflect on them personally.',
+      'Direct or order.',
+      'Assume they heard what you said.',
+    ],
+  },
+  I: {
+    waysToCommunicate: [
+      'Provide testimonials from people they see as important.',
+      'Provide a forum for them to verbalize their thoughts.',
+      'Be enthusiastic and optimistic.',
+      'Allow time for relating and socializing.',
+      'Put details in writing.',
+      'Focus on people benefits.',
+      'Provide ideas for implementing action.',
+      'Be stimulating, fun-loving and fast-moving.',
+      'Give them public recognition.',
+      'Support their dreams and intentions.',
+      'Allow them to move at a rapid pace.',
+      'Talk about "who" more than "what" or "how".',
+      'Provide incentives for others to work with them.',
+      'Be open to their non-verbal communication.',
+      'Provide them with names and faces of other people involved.',
+    ],
+    waysNotToCommunicate: [
+      'Be cold, aloof or tight-lipped.',
+      'Be overly task-oriented.',
+      'Leave decisions hanging in the air.',
+      'Drive on facts and figures, alternatives or abstractions.',
+      'Forget to include them in the decision-making process.',
+      'Be pessimistic or critical.',
+      'Be impersonal or task-oriented.',
+      'Leave them out of the social loop.',
+      'Forget to provide testimonials and social proof.',
+      'Be boring or too low-key.',
+      'Forget to recognize their contributions.',
+      'Be overly structured or rigid.',
+    ],
+  },
+  S: {
+    waysToCommunicate: [
+      'Begin with personal comments--break the ice.',
+      'Show sincere interest in them as people.',
+      'Listen and be responsive to them.',
+      'Be patient, helpful and show appreciation.',
+      'Give them time to think things over.',
+      'Provide personal assurances and guarantees.',
+      'Give them time to adjust to change.',
+      'Present your case softly, non-threateningly.',
+      'Ask "how" questions to draw out their opinions.',
+      'Find out about their personal and family interests.',
+      'Be consistent and regular in your follow-through.',
+      'Provide clarification if needed.',
+      'Give them advance notice so they can prepare.',
+      'Reassure them that support will be available.',
+    ],
+    waysNotToCommunicate: [
+      'Be pushy, gimmicky or manipulative.',
+      'Be rude, aggressive or overly assertive.',
+      'Forget to be personal and friendly.',
+      'Rush them or force quick decisions.',
+      'Be overly businesslike or task-oriented.',
+      'Forget to follow through on commitments.',
+      'Change things suddenly or unexpectedly.',
+      'Forget to provide personal assurances.',
+      'Be impatient or demanding.',
+      'Forget to show appreciation for their contributions.',
+      'Be cold or impersonal.',
+      'Forget to give them time to process information.',
+    ],
+  },
+  C: {
+    waysToCommunicate: [
+      'Be systematic, logical, well prepared and organized.',
+      'Be accurate and realistic.',
+      'List advantages and disadvantages of any plan.',
+      'Give them time to verify and check information.',
+      'Provide them with detailed, written data.',
+      'Be patient with the decision-making process.',
+      'Be precise and specific about expectations.',
+      'Provide clarification and answers to questions.',
+      'Present information in an orderly manner.',
+      'Support their organized, thoughtful approach.',
+      'Give them time to analyze and process.',
+      'Be diplomatic and tactful.',
+      'Provide documentation and follow-up in writing.',
+      'Respect their need for accuracy and quality.',
+    ],
+    waysNotToCommunicate: [
+      'Be disorganized or messy.',
+      'Be giddy, casual, informal or loud.',
+      'Be vague or ambiguous.',
+      'Force quick decisions or responses.',
+      'Be confrontational or demanding.',
+      'Forget to provide detailed information.',
+      'Be overly optimistic or unrealistic.',
+      'Forget to follow through on commitments.',
+      'Be inconsistent or unpredictable.',
+      'Forget to provide written documentation.',
+      'Be overly emotional or dramatic.',
+      'Forget to allow time for analysis and verification.',
+    ],
+  },
+}
+
+// Perceptions Data - How each DISC type sees themselves and how others see them
+const perceptionsData: Record<DISCType, { selfPerception: string[]; othersPerceptionModerate: string[]; othersPerceptionExtreme: string[] }> = {
+  D: {
+    selfPerception: ['Pioneering', 'Competitive', 'Positive', 'Assertive', 'Confident', 'Winner'],
+    othersPerceptionModerate: ['Demanding', 'Egotistical', 'Nervy', 'Aggressive'],
+    othersPerceptionExtreme: ['Abrasive', 'Arbitrary', 'Controlling', 'Opinionated'],
+  },
+  I: {
+    selfPerception: ['Enthusiastic', 'Optimistic', 'Friendly', 'Persuasive', 'Inspiring', 'Energetic'],
+    othersPerceptionModerate: ['Disorganized', 'Overly Talkative', 'Emotional', 'Unrealistic'],
+    othersPerceptionExtreme: ['Manipulative', 'Superficial', 'Undisciplined', 'Reckless'],
+  },
+  S: {
+    selfPerception: ['Patient', 'Loyal', 'Dependable', 'Calm', 'Supportive', 'Stable'],
+    othersPerceptionModerate: ['Resistant', 'Indecisive', 'Passive', 'Slow'],
+    othersPerceptionExtreme: ['Stubborn', 'Unresponsive', 'Inflexible', 'Unmotivated'],
+  },
+  C: {
+    selfPerception: ['Analytical', 'Precise', 'Thorough', 'Systematic', 'Quality-focused', 'Careful'],
+    othersPerceptionModerate: ['Overly Critical', 'Perfectionistic', 'Withdrawn', 'Rigid'],
+    othersPerceptionExtreme: ['Pessimistic', 'Indecisive', 'Isolated', 'Stubborn'],
+  },
+}
+
 // Helper function to convert hex to RGB
 const hexToRgb = (hex: string): [number, number, number] => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
@@ -246,10 +402,17 @@ export async function generatePDFReport(
   const doc = new jsPDF('p', 'mm', 'a4')
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  const margin = 20
+  const margin = 15
   const contentWidth = pageWidth - 2 * margin
   let yPos = margin
-  let currentPage = 1
+
+  // Small helper to keep sections from running off the page
+  const ensureSpace = (requiredSpace: number) => {
+    if (yPos + requiredSpace > pageHeight - margin) {
+      doc.addPage()
+      yPos = margin
+    }
+  }
 
   // Capture chart images if provided
   let barChartImage: { src: string; width: number; height: number } | null = null
@@ -292,627 +455,743 @@ export async function generatePDFReport(
   const profileShifted = scores.primaryNatural !== scores.primaryAdaptive
 
   const hasDrivingForces = !!result.drivingForces
+  const discTypes: DISCType[] = ['D', 'I', 'S', 'C']
 
-  // Base page count (may slightly undercount if content flows onto extra pages)
-  const totalPages = hasDrivingForces ? 9 : 8
-
-  // ========== PAGE 1: COVER PAGE ==========
-  doc.setFillColor(248, 250, 252) // slate-50
+  // ========== PAGE 1: OVERVIEW (mirror web results header) ==========
+  doc.setFillColor(248, 250, 252) // slate-50 background
   doc.rect(0, 0, pageWidth, pageHeight, 'F')
 
-  // Title
-  doc.setFontSize(32)
-  doc.setTextColor(30, 41, 59) // slate-800
+  // Title + person info
+  yPos = 28
+  doc.setFontSize(22)
+  doc.setTextColor(15, 23, 42) // slate-900
   doc.setFont('helvetica', 'bold')
-  doc.text('DISC Assessment', pageWidth / 2, 60, { align: 'center' })
+  doc.text('Your Assessment Results', pageWidth / 2, yPos, { align: 'center' })
 
-  doc.setFontSize(20)
+  yPos += 8
+  doc.setFontSize(11)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(71, 85, 105) // slate-600
-  doc.text('Natural & Adaptive Styles Report', pageWidth / 2, 75, { align: 'center' })
+  doc.text(`${result.name} • ${result.dept}`, pageWidth / 2, yPos, { align: 'center' })
 
-  // User Info Box
-  yPos = 100
-  doc.setFillColor(255, 255, 255)
-  doc.roundedRect(margin, yPos, contentWidth, 50, 3, 3, 'F')
-  doc.setDrawColor(226, 232, 240) // slate-200
-  doc.setLineWidth(0.5)
-  doc.roundedRect(margin, yPos, contentWidth, 50, 3, 3, 'S')
-
-  yPos += 15
-  doc.setFontSize(14)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text(`Name: ${result.name}`, margin + 10, yPos)
-  yPos += 10
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(12)
-  doc.text(`Department: ${result.dept}`, margin + 10, yPos)
-  yPos += 10
-  doc.text(`Assessment Date: ${new Date(result.date).toLocaleDateString('en-US', {
+  yPos += 6
+  const formattedDate = new Date(result.date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  })}`, margin + 10, yPos)
+  })
+  doc.text(`Assessment Date: ${formattedDate}`, pageWidth / 2, yPos, { align: 'center' })
 
-  // Primary Styles
-  yPos = 180
-  const boxWidth = (contentWidth - 10) / 2
+  // Primary style cards (natural / adaptive) – compact, side by side
+  yPos += 14
+  const primaryBoxWidth = (contentWidth - 10) / 2
+  const primaryBoxHeight = 55
 
-  // Natural Style Box
+  // Natural Style card
+  const naturalX = margin
   const [nr, ng, nb] = hexToRgb(naturalProfile.color)
-  doc.setFillColor(240, 253, 244) // emerald-50
-  doc.roundedRect(margin, yPos, boxWidth, 40, 3, 3, 'F')
+  const [nrBgR, nrBgG, nrBgB] = hexToRgb(naturalProfile.bgColor)
+  doc.setFillColor(nrBgR, nrBgG, nrBgB)
+  doc.roundedRect(naturalX, yPos, primaryBoxWidth, primaryBoxHeight, 3, 3, 'F')
   doc.setDrawColor(nr, ng, nb)
   doc.setLineWidth(1)
-  doc.roundedRect(margin, yPos, boxWidth, 40, 3, 3, 'S')
+  doc.roundedRect(naturalX, yPos, primaryBoxWidth, primaryBoxHeight, 3, 3, 'S')
 
-  doc.setFontSize(10)
+  doc.setFontSize(9)
   doc.setTextColor(71, 85, 105)
-  doc.text('NATURAL STYLE', margin + 10, yPos + 10)
-  doc.setFontSize(24)
+  doc.setFont('helvetica', 'bold')
+  doc.text('NATURAL STYLE', naturalX + 6, yPos + 8)
+
+  doc.setFontSize(22)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(nr, ng, nb)
-  doc.text(scores.primaryNatural, margin + 10, yPos + 25)
+  doc.text(scores.primaryNatural, naturalX + 6, yPos + 22)
+
   doc.setFontSize(12)
   doc.setTextColor(30, 41, 59)
-  doc.text(naturalProfile.name, margin + 10, yPos + 35)
+  doc.text(naturalProfile.name, naturalX + 6, yPos + 31)
 
-  // Adaptive Style Box
-  const [ar, ag, ab] = hexToRgb(adaptiveProfile.color)
-  doc.setFillColor(255, 247, 237) // orange-50
-  doc.roundedRect(margin + boxWidth + 10, yPos, boxWidth, 40, 3, 3, 'F')
-  doc.setDrawColor(ar, ag, ab)
-  doc.roundedRect(margin + boxWidth + 10, yPos, boxWidth, 40, 3, 3, 'S')
-
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8)
   doc.setTextColor(71, 85, 105)
-  doc.text('ADAPTIVE STYLE', margin + boxWidth + 20, yPos + 10)
-  doc.setFontSize(24)
+  const naturalDescLines = doc.splitTextToSize(naturalProfile.naturalDesc, primaryBoxWidth - 12).slice(0, 3)
+  doc.text(naturalDescLines, naturalX + 6, yPos + 39)
+
+  // Adaptive Style card
+  const adaptiveX = margin + primaryBoxWidth + 10
+  const [ar, ag, ab] = hexToRgb(adaptiveProfile.color)
+  const [arBgR, arBgG, arBgB] = hexToRgb(adaptiveProfile.bgColor)
+  doc.setFillColor(arBgR, arBgG, arBgB)
+  doc.roundedRect(adaptiveX, yPos, primaryBoxWidth, primaryBoxHeight, 3, 3, 'F')
+  doc.setDrawColor(ar, ag, ab)
+  doc.roundedRect(adaptiveX, yPos, primaryBoxWidth, primaryBoxHeight, 3, 3, 'S')
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(71, 85, 105)
+  doc.text('ADAPTIVE STYLE', adaptiveX + 6, yPos + 8)
+
+  doc.setFontSize(22)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(ar, ag, ab)
-  doc.text(scores.primaryAdaptive, margin + boxWidth + 20, yPos + 25)
+  doc.text(scores.primaryAdaptive, adaptiveX + 6, yPos + 22)
+
   doc.setFontSize(12)
   doc.setTextColor(30, 41, 59)
-  doc.text(adaptiveProfile.name, margin + boxWidth + 20, yPos + 35)
+  doc.text(adaptiveProfile.name, adaptiveX + 6, yPos + 31)
 
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
-
-  // ========== PAGE 2: EXECUTIVE SUMMARY ==========
-  doc.addPage()
-  yPos = margin
-  addHeader(doc, 'Executive Summary')
-
-  yPos = 40
-  doc.setFontSize(14)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text('Your Primary Styles', margin, yPos)
-  yPos += 15
-
-  // Natural Style Description
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(5, 150, 105) // emerald-600
-  doc.text('Natural Style (Your Comfort Zone)', margin, yPos)
-  yPos += 8
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(51, 65, 85)
-  yPos = addWrappedText(doc, naturalProfile.naturalDesc, margin, yPos, contentWidth, 7, 11) + 5
-
-  // Traits
-  doc.setFontSize(10)
+  doc.setFontSize(8)
   doc.setTextColor(71, 85, 105)
-  doc.text('Key Traits: ', margin, yPos)
-  const traitsText = naturalProfile.traits.join(' • ')
-  doc.text(traitsText, margin + 25, yPos)
-  yPos += 15
+  const adaptiveDescLines = doc.splitTextToSize(adaptiveProfile.stressResponse, primaryBoxWidth - 12).slice(0, 3)
+  doc.text(adaptiveDescLines, adaptiveX + 6, yPos + 39)
 
-  // Adaptive Style Description
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(234, 88, 12) // orange-600
-  doc.text('Adaptive Style (Under Stress)', margin, yPos)
-  yPos += 8
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(51, 65, 85)
-  yPos = addWrappedText(doc, adaptiveProfile.adaptiveDesc, margin, yPos, contentWidth, 7, 11) + 5
+  yPos += primaryBoxHeight + 12
 
-  // Profile Shift Alert
+  // Compact profile shift alert (if styles differ)
   if (profileShifted) {
-    yPos += 5
     doc.setFillColor(255, 251, 235) // amber-50
-    doc.roundedRect(margin, yPos, contentWidth, 25, 3, 3, 'F')
+    const shiftBoxHeight = 28
+    doc.roundedRect(margin, yPos, contentWidth, shiftBoxHeight, 3, 3, 'F')
     doc.setDrawColor(253, 224, 71) // amber-300
-    doc.roundedRect(margin, yPos, contentWidth, 25, 3, 3, 'S')
+    doc.roundedRect(margin, yPos, contentWidth, shiftBoxHeight, 3, 3, 'S')
+
     yPos += 8
     doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(180, 83, 9) // amber-700
-    doc.text('⚡ Profile Shift Detected', margin + 5, yPos)
+    doc.text('⚡ Profile Shift Detected', margin + 6, yPos)
     yPos += 8
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(146, 64, 14) // amber-800
     const shiftText = `Your primary style shifts from ${naturalProfile.name} to ${adaptiveProfile.name} under stress. This indicates you adapt your behavior significantly when facing pressure.`
-    addWrappedText(doc, shiftText, margin + 5, yPos, contentWidth - 10, 6, 10)
+    const shiftLines = doc.splitTextToSize(shiftText, contentWidth - 12)
+    doc.text(shiftLines, margin + 6, yPos)
+    yPos += 14
   }
 
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
-
-  // ========== PAGE 3: SCORE BREAKDOWN ==========
+  // ========== PAGE 2: SCORES & VISUAL SUMMARY ==========
   doc.addPage()
   yPos = margin
-  addHeader(doc, 'Detailed Score Breakdown')
-
+  addHeader(doc, 'Scores & Visual Summary')
   yPos = 40
-  // Natural Scores Table
+
+  // --- Stress response analysis (compact grid, mirrors web \"Stress Response Analysis\") ---
+  const shiftAnalysis = discTypes.map((type) => ({
+    type,
+    name: profileDescriptions[type].name,
+    natural: scores.natural[type],
+    adaptive: scores.adaptive[type],
+    shift: scores.adaptive[type] - scores.natural[type],
+  }))
+
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(5, 150, 105) // emerald-600
-  doc.text('Natural Style Scores', margin, yPos)
-  yPos += 10
-
-  // Table header
-  doc.setFillColor(240, 253, 244) // emerald-50
-  doc.rect(margin, yPos, contentWidth, 10, 'F')
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
   doc.setTextColor(30, 41, 59)
-  doc.text('Style', margin + 5, yPos + 7)
-  doc.text('Score', margin + contentWidth - 30, yPos + 7, { align: 'right' })
-  yPos += 10
+  doc.text('Stress Response Analysis', margin, yPos)
+  yPos += 6
 
-  // Table rows
-  const discTypes: DISCType[] = ['D', 'I', 'S', 'C']
-  discTypes.forEach((type, index) => {
-    const profile = profileDescriptions[type]
-    const score = scores.natural[type]
-    const [r, g, b] = hexToRgb(profile.color)
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  const stressIntro =
+    'Shows how each style changes from your Natural scores to Adaptive scores when you are under stress.'
+  const stressLines = doc.splitTextToSize(stressIntro, contentWidth)
+  doc.text(stressLines, margin, yPos)
+  yPos += stressLines.length * 4.5 + 4
 
-    if (index % 2 === 0) {
-      doc.setFillColor(248, 250, 252) // slate-50
-      doc.rect(margin, yPos, contentWidth, 8, 'F')
-    }
+  const stressBoxWidth = (contentWidth - 10) / 2
+  const stressBoxHeight = 22
+  const stressStartY = yPos
 
-    doc.setFontSize(10)
+  shiftAnalysis.forEach((item, index) => {
+    const col = index % 2
+    const row = Math.floor(index / 2)
+    const x = margin + col * (stressBoxWidth + 10)
+    const boxY = stressStartY + row * (stressBoxHeight + 4)
+
+    doc.setFillColor(248, 250, 252) // slate-50
+    doc.roundedRect(x, boxY, stressBoxWidth, stressBoxHeight, 2, 2, 'F')
+    doc.setDrawColor(226, 232, 240)
+    doc.roundedRect(x, boxY, stressBoxWidth, stressBoxHeight, 2, 2, 'S')
+
+    const [r, g, b] = hexToRgb(profileDescriptions[item.type].color)
+
+    doc.setFontSize(9)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(r, g, b)
-    doc.text(profile.name, margin + 5, yPos + 6)
+    doc.text(`${item.type} – ${item.name}`, x + 4, boxY + 7)
+
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(51, 65, 85)
-    doc.text(`${score}%`, margin + contentWidth - 30, yPos + 6, { align: 'right' })
+    doc.setFontSize(8)
+    doc.setTextColor(22, 163, 74) // emerald-600
+    doc.text(`Nat ${item.natural}%`, x + 4, boxY + 14)
 
-    // Progress bar
-    const barWidth = (score / 100) * (contentWidth - 60)
-    doc.setFillColor(r, g, b)
-    doc.rect(margin + 50, yPos + 3, barWidth, 4, 'F')
+    doc.setTextColor(234, 88, 12) // orange-600
+    doc.text(`Adp ${item.adaptive}%`, x + stressBoxWidth / 2, boxY + 14)
 
-    yPos += 8
-  })
-
-  yPos += 10
-
-  // Adaptive Scores Table
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(234, 88, 12) // orange-600
-  doc.text('Adaptive Style Scores', margin, yPos)
-  yPos += 10
-
-  // Table header
-  doc.setFillColor(255, 247, 237) // orange-50
-  doc.rect(margin, yPos, contentWidth, 10, 'F')
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text('Style', margin + 5, yPos + 7)
-  doc.text('Score', margin + contentWidth - 30, yPos + 7, { align: 'right' })
-  yPos += 10
-
-  // Table rows
-  discTypes.forEach((type, index) => {
-    const profile = profileDescriptions[type]
-    const score = scores.adaptive[type]
-    const [r, g, b] = hexToRgb(profile.color)
-
-    if (index % 2 === 0) {
-      doc.setFillColor(248, 250, 252) // slate-50
-      doc.rect(margin, yPos, contentWidth, 8, 'F')
+    const shift = item.shift
+    let shiftLabel = '—'
+    let shiftColor: [number, number, number] = [107, 114, 128] // slate-500
+    if (shift > 0) {
+      shiftLabel = `+${shift}`
+      shiftColor = [220, 38, 38] // red-600
+    } else if (shift < 0) {
+      shiftLabel = `${shift}`
+      shiftColor = [37, 99, 235] // blue-600
     }
-
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(r, g, b)
-    doc.text(profile.name, margin + 5, yPos + 6)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(51, 65, 85)
-    doc.text(`${score}%`, margin + contentWidth - 30, yPos + 6, { align: 'right' })
-
-    // Progress bar
-    const barWidth = (score / 100) * (contentWidth - 60)
-    doc.setFillColor(r, g, b)
-    doc.rect(margin + 50, yPos + 3, barWidth, 4, 'F')
-
-    yPos += 8
+    doc.setTextColor(shiftColor[0], shiftColor[1], shiftColor[2])
+    doc.text(shiftLabel, x + stressBoxWidth - 4, boxY + 14, { align: 'right' })
   })
 
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
+  yPos = stressStartY + 2 * (stressBoxHeight + 4) + 8
 
-  // ========== PAGE 4: VISUALIZATIONS ==========
-  doc.addPage()
-  yPos = margin
-  addHeader(doc, 'Visual Analysis')
+  // --- Charts (bar + radar) ---
+  const maxChartHeight = 60
 
-  yPos = 40
   if (barChartImage) {
-    doc.setFontSize(12)
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(30, 41, 59)
     doc.text('Natural vs Adaptive Comparison', margin, yPos)
-    yPos += 10
+    yPos += 6
 
-    // Scale chart to fit width while preserving original aspect ratio
     let imgWidth = contentWidth
-    let imgHeight = (barChartImage.height / barChartImage.width) * imgWidth
-    const maxHeight = pageHeight - margin - yPos - 20
-    if (imgHeight > maxHeight) {
-      const scale = maxHeight / imgHeight
+    const ratio = barChartImage.height && barChartImage.width ? barChartImage.height / barChartImage.width : 0.6
+    let imgHeight = ratio * imgWidth
+    if (imgHeight > maxChartHeight) {
+      const scale = maxChartHeight / imgHeight
       imgHeight *= scale
       imgWidth *= scale
     }
 
     doc.addImage(barChartImage.src, 'PNG', margin, yPos, imgWidth, imgHeight)
-    yPos += imgHeight + 15
+    yPos += imgHeight + 6
   }
 
-  if (radarChartImage && yPos < pageHeight - 80) {
-    doc.setFontSize(12)
+  if (radarChartImage) {
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'bold')
     doc.setTextColor(30, 41, 59)
-    doc.text('Profile Radar Chart', margin, yPos)
-    yPos += 10
+    doc.text('Profile Radar', margin, yPos)
+    yPos += 6
 
     let imgWidth = contentWidth
-    let imgHeight = (radarChartImage.height / radarChartImage.width) * imgWidth
-    const maxHeight = pageHeight - margin - yPos - 20
-    if (imgHeight > maxHeight) {
-      const scale = maxHeight / imgHeight
+    const ratio = radarChartImage.height && radarChartImage.width ? radarChartImage.height / radarChartImage.width : 0.6
+    let imgHeight = ratio * imgWidth
+    if (imgHeight > maxChartHeight) {
+      const scale = maxChartHeight / imgHeight
       imgHeight *= scale
       imgWidth *= scale
     }
 
-    if (yPos + imgHeight < pageHeight - 20) {
-      doc.addImage(radarChartImage.src, 'PNG', margin, yPos, imgWidth, imgHeight)
-    } else {
-      // Move to next page if not enough space
-      doc.addPage()
-      currentPage++
-      yPos = margin + 20
-      addHeader(doc, 'Profile Radar Chart')
-      yPos = 40
-      doc.addImage(radarChartImage.src, 'PNG', margin, yPos, imgWidth, imgHeight)
-    }
+    doc.addImage(radarChartImage.src, 'PNG', margin, yPos, imgWidth, imgHeight)
+    yPos += imgHeight + 8
   }
 
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
+  // --- Compact score table (mirrors score details from web) ---
+  ensureSpace(40)
 
-  // ========== PAGE 5: PROFILE DESCRIPTIONS ==========
-  doc.addPage()
-  yPos = margin
-  addHeader(doc, 'Understanding DISC Styles')
-
-  yPos = 40
   doc.setFontSize(11)
-  doc.setTextColor(51, 65, 85)
-  yPos = addWrappedText(
-    doc,
-    'The DISC model identifies four primary behavioral styles. Understanding these styles helps you recognize your natural tendencies and how you adapt under pressure.',
-    margin,
-    yPos,
-    contentWidth,
-    7,
-    11
-  )
-  yPos += 10
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('Score Summary', margin, yPos)
+  yPos += 6
 
-  discTypes.forEach((type) => {
+  // Header
+  doc.setFillColor(248, 250, 252)
+  doc.rect(margin, yPos, contentWidth, 8, 'F')
+  doc.setFontSize(9)
+  doc.setTextColor(30, 41, 59)
+  doc.text('Style', margin + 4, yPos + 5)
+  doc.text('Natural', margin + 50, yPos + 5)
+  doc.text('Adaptive', margin + 95, yPos + 5)
+  yPos += 8
+
+  discTypes.forEach((type, index) => {
     const profile = profileDescriptions[type]
-    const [r, g, b] = hexToRgb(profile.color)
+    const nat = scores.natural[type]
+    const adp = scores.adaptive[type]
 
-    // Check if we need a new page
-    if (yPos > pageHeight - 60) {
-      doc.addPage()
-      currentPage++
-      yPos = margin + 20
+    if (index % 2 === 0) {
+      doc.setFillColor(255, 255, 255)
+      doc.rect(margin, yPos, contentWidth, 7, 'F')
     }
 
-    // Style header
-    doc.setFillColor(248, 250, 252) // slate-50
-    doc.roundedRect(margin, yPos, contentWidth, 12, 2, 2, 'F')
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(r, g, b)
-    doc.text(`${type} - ${profile.name}`, margin + 5, yPos + 8)
-    yPos += 15
-
-    // Description
-    doc.setFontSize(10)
+    doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(51, 65, 85)
-    yPos = addWrappedText(doc, profile.naturalDesc, margin, yPos, contentWidth, 6, 10) + 5
-
-    // Traits
-    doc.setFontSize(9)
-    doc.setTextColor(71, 85, 105)
-    doc.text('Traits: ' + profile.traits.join(', '), margin, yPos)
-    yPos += 12
+    doc.text(profile.name, margin + 4, yPos + 5)
+    doc.text(`${nat}%`, margin + 50, yPos + 5)
+    doc.text(`${adp}%`, margin + 95, yPos + 5)
+    yPos += 7
   })
 
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
-
-  // ========== PAGE 6: YOUR PERSONALIZED INSIGHTS ==========
+  // ========== PAGE 3: INSIGHTS, COMMUNICATION & DRIVING FORCES ==========
   doc.addPage()
   yPos = margin
-  addHeader(doc, 'Your Personalized Insights')
-
+  addHeader(doc, 'Insights & Communication')
   yPos = 40
 
-  // Natural Strengths
-  doc.setFillColor(240, 253, 244) // emerald-50
-  doc.roundedRect(margin, yPos, contentWidth, 50, 3, 3, 'F')
-  doc.setDrawColor(5, 150, 105) // emerald-600
-  doc.setLineWidth(0.5)
-  doc.roundedRect(margin, yPos, contentWidth, 50, 3, 3, 'S')
-
+  // --- Natural strengths / stress / growth (same copy as web) ---
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(5, 150, 105)
-  doc.text('💚 Your Natural Strengths', margin + 5, yPos + 10)
-  yPos += 12
-  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(5, 150, 105) // emerald-600
+  doc.text('Your Natural Strengths', margin, yPos)
+  yPos += 6
+
   doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
   doc.setTextColor(51, 65, 85)
-  yPos = addWrappedText(doc, naturalProfile.naturalDesc, margin + 5, yPos, contentWidth - 10, 6, 10) + 5
+  yPos = addWrappedText(doc, naturalProfile.naturalDesc, margin, yPos, contentWidth, 6, 10) + 3
+
   doc.setFontSize(9)
   doc.setTextColor(71, 85, 105)
-  doc.text('Key Traits: ' + naturalProfile.traits.join(', '), margin + 5, yPos)
-  yPos += 60
-
-  // Under Stress
-  doc.setFillColor(255, 247, 237) // orange-50
-  doc.roundedRect(margin, yPos, contentWidth, 40, 3, 3, 'F')
-  doc.setDrawColor(234, 88, 12) // orange-600
-  doc.roundedRect(margin, yPos, contentWidth, 40, 3, 3, 'S')
+  const traitsText = 'Key traits: ' + naturalProfile.traits.join(', ')
+  yPos = addWrappedText(doc, traitsText, margin, yPos, contentWidth, 5, 9) + 8
 
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(234, 88, 12)
-  doc.text('⚡ Under Stress You May...', margin + 5, yPos + 10)
-  yPos += 12
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(51, 65, 85)
-  yPos = addWrappedText(doc, adaptiveProfile.adaptiveDesc, margin + 5, yPos, contentWidth - 10, 6, 10) + 15
+  doc.setTextColor(234, 88, 12) // orange-600
+  doc.text('Under Stress You May…', margin, yPos)
+  yPos += 6
 
-  // Growth Opportunities
-  doc.setFillColor(239, 246, 255) // blue-50
-  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F')
-  doc.setDrawColor(37, 99, 235) // blue-600
-  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'S')
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  yPos = addWrappedText(doc, adaptiveProfile.adaptiveDesc, margin, yPos, contentWidth, 6, 10) + 8
 
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(37, 99, 235)
-  doc.text('🎯 Growth Opportunities', margin + 5, yPos + 10)
-  yPos += 12
-  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(37, 99, 235) // blue-600
+  doc.text('Growth Opportunities', margin, yPos)
+  yPos += 6
+
   doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
   doc.setTextColor(51, 65, 85)
-  addWrappedText(doc, naturalProfile.growth, margin + 5, yPos, contentWidth - 10, 6, 10)
+  yPos = addWrappedText(doc, naturalProfile.growth, margin, yPos, contentWidth, 6, 10) + 8
 
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
-
-  // ========== PAGE 7: COMMUNICATION PREFERENCES ==========
-  doc.addPage()
-  yPos = margin
-  addHeader(doc, 'How to Communicate With You')
-
-  yPos = 40
+  // --- Communication guidance (mirrors web \"How to Communicate With You\") ---
+  ensureSpace(70)
   const commGuide = communicationGuides[scores.primaryNatural]
 
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(51, 65, 85)
-  yPos = addWrappedText(
-    doc,
-    `These guidelines are based primarily on your Natural style (${scores.primaryNatural} – ${naturalProfile.name}). Share this page with your manager and teammates to help them communicate with you more effectively.`,
-    margin,
-    yPos,
-    contentWidth,
-    7,
-    11
-  ) + 6
-
-  // How to communicate
-  doc.setFillColor(248, 250, 252) // slate-50
-  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F')
-  doc.setDrawColor(22, 163, 74) // emerald-600
-  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'S')
-  yPos += 8
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('How to Communicate With You', margin, yPos)
+  yPos += 6
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  yPos =
+    addWrappedText(
+      doc,
+      `Based primarily on your Natural style (${scores.primaryNatural} – ${naturalProfile.name}).`,
+      margin,
+      yPos,
+      contentWidth,
+      6,
+      10
+    ) + 4
+
+  // Do this
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
   doc.setTextColor(22, 163, 74)
-  doc.text('Do this when communicating with you', margin + 5, yPos)
-  yPos += 8
+  doc.text('Do this when communicating with you', margin, yPos)
+  yPos += 5
+
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(51, 65, 85)
   commGuide.howToCommunicate.forEach((tip) => {
-    yPos = addWrappedText(doc, `• ${tip}`, margin + 7, yPos, contentWidth - 12, 5, 9) + 1
+    yPos = addWrappedText(doc, `• ${tip}`, margin + 4, yPos, contentWidth - 8, 5, 9) + 1
   })
   yPos += 4
 
-  // How not to communicate
-  if (yPos > pageHeight - 60) {
-    addPageNumber(doc, currentPage, totalPages)
-    currentPage++
-    doc.addPage()
-    yPos = margin
-    addHeader(doc, 'How to Communicate With You (cont.)')
-    yPos = 40
-  }
-
-  doc.setFillColor(254, 242, 242) // red-50
-  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'F')
-  doc.setDrawColor(239, 68, 68) // red-500
-  doc.roundedRect(margin, yPos, contentWidth, 35, 3, 3, 'S')
-  yPos += 8
-  doc.setFontSize(12)
+  // Avoid this
+  ensureSpace(40)
+  doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(185, 28, 28)
-  doc.text('Avoid this when communicating with you', margin + 5, yPos)
-  yPos += 8
+  doc.text('Avoid this when communicating with you', margin, yPos)
+  yPos += 5
+
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(51, 65, 85)
   commGuide.howNotToCommunicate.forEach((tip) => {
-    yPos = addWrappedText(doc, `• ${tip}`, margin + 7, yPos, contentWidth - 12, 5, 9) + 1
+    yPos = addWrappedText(doc, `• ${tip}`, margin + 4, yPos, contentWidth - 8, 5, 9) + 1
+  })
+  yPos += 6
+
+  // Self vs others perception
+  ensureSpace(40)
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('How you likely see yourself', margin, yPos)
+  yPos += 5
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  commGuide.selfPerception.forEach((item) => {
+    yPos = addWrappedText(doc, `• ${item}`, margin + 4, yPos, contentWidth - 8, 5, 9) + 1
+  })
+  yPos += 6
+
+  ensureSpace(40)
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 41, 59)
+  doc.text('How others may see you', margin, yPos)
+  yPos += 5
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  commGuide.othersPerception.forEach((item) => {
+    yPos = addWrappedText(doc, `• ${item}`, margin + 4, yPos, contentWidth - 8, 5, 9) + 1
+  })
+  yPos += 6
+
+  // ========== PAGE 4: CHECKLIST FOR COMMUNICATING ==========
+  doc.addPage()
+  yPos = margin
+  addHeader(doc, 'Checklist for Communicating')
+  yPos = 40
+
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  const checklistIntro = `Most people are aware of and sensitive to the ways with which they prefer to be communicated. Many people find this section to be extremely accurate and important for enhanced interpersonal communication. This page provides other people with a list of things to DO when communicating with ${result.name}. Read each statement and identify the 3 or 4 statements which are most important to them. We recommend highlighting the most important "DO's" and provide a listing to those who communicate with ${result.name} most frequently.`
+  yPos = addWrappedText(doc, checklistIntro, margin, yPos, contentWidth, 5, 10) + 8
+
+  const checklist = communicationChecklists[scores.primaryNatural]
+
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(14, 165, 233) // sky-500
+  doc.text('Ways to Communicate:', margin, yPos)
+  yPos += 8
+
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  checklist.waysToCommunicate.forEach((item) => {
+    ensureSpace(8)
+    // Draw checkbox
+    doc.setDrawColor(100, 116, 139)
+    doc.setLineWidth(0.5)
+    doc.rect(margin, yPos - 3, 4, 4, 'S')
+    yPos = addWrappedText(doc, item, margin + 8, yPos, contentWidth - 12, 5, 9) + 2
   })
   yPos += 4
 
-  // Self vs others perception
-  if (yPos > pageHeight - 60) {
-    addPageNumber(doc, currentPage, totalPages)
-    currentPage++
-    doc.addPage()
-    yPos = margin
-    addHeader(doc, 'How to Communicate With You (cont.)')
-    yPos = 40
+  // Add DISC charts at bottom if space allows
+  ensureSpace(50)
+  const chartY = pageHeight - 60
+  if (yPos < chartY - 10) {
+    yPos = chartY
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text('Adapted Style', margin, yPos)
+    doc.text('Natural Style', margin + contentWidth / 2, yPos)
+    yPos += 5
+
+    // Draw simple bar charts
+    const chartWidth = contentWidth / 2 - 10
+    const chartHeight = 40
+    const barWidth = chartWidth / 4 - 2
+
+    // Adapted Style Chart
+    discTypes.forEach((type, idx) => {
+      const value = scores.adaptive[type]
+      const barHeight = (value / 100) * chartHeight
+      const x = margin + idx * (chartWidth / 4) + 2
+      const y = yPos + chartHeight - barHeight
+      const [r, g, b] = hexToRgb(profileDescriptions[type].color)
+      doc.setFillColor(r, g, b)
+      doc.rect(x, y, barWidth, barHeight, 'F')
+    })
+
+    // Natural Style Chart
+    discTypes.forEach((type, idx) => {
+      const value = scores.natural[type]
+      const barHeight = (value / 100) * chartHeight
+      const x = margin + contentWidth / 2 + idx * (chartWidth / 4) + 2
+      const y = yPos + chartHeight - barHeight
+      const [r, g, b] = hexToRgb(profileDescriptions[type].color)
+      doc.setFillColor(r, g, b)
+      doc.rect(x, y, barWidth, barHeight, 'F')
+    })
+
+    yPos += chartHeight + 5
+    doc.setFontSize(8)
+    doc.setTextColor(71, 85, 105)
+    doc.text('D I S C', margin, yPos)
+    doc.text(
+      `${scores.adaptive.D} ${scores.adaptive.I} ${scores.adaptive.S} ${scores.adaptive.C}`,
+      margin,
+      yPos + 4
+    )
+    doc.text('D I S C', margin + contentWidth / 2, yPos)
+    doc.text(
+      `${scores.natural.D} ${scores.natural.I} ${scores.natural.S} ${scores.natural.C}`,
+      margin + contentWidth / 2,
+      yPos + 4
+    )
+    yPos += 10
+    doc.setFontSize(10)
+    doc.setTextColor(30, 41, 59)
+    doc.text(result.name, margin, yPos)
   }
 
-  const columnWidth = (contentWidth - 10) / 2
-  const leftX = margin
-  const rightX = margin + columnWidth + 10
-
-  // Self-perception column
-  doc.setFillColor(239, 246, 255) // blue-50
-  doc.roundedRect(leftX, yPos, columnWidth, 40, 3, 3, 'F')
-  doc.setDrawColor(37, 99, 235) // blue-600
-  doc.roundedRect(leftX, yPos, columnWidth, 40, 3, 3, 'S')
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(37, 99, 235)
-  doc.text('How you likely see yourself', leftX + 4, yPos + 8)
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(51, 65, 85)
-  let innerY = yPos + 13
-  commGuide.selfPerception.forEach((item) => {
-    innerY = addWrappedText(doc, `• ${item}`, leftX + 5, innerY, columnWidth - 8, 5, 9) + 1
-  })
-
-  // Others-perception column
-  doc.setFillColor(248, 250, 252) // slate-50
-  doc.roundedRect(rightX, yPos, columnWidth, 40, 3, 3, 'F')
-  doc.setDrawColor(148, 163, 184) // slate-400
-  doc.roundedRect(rightX, yPos, columnWidth, 40, 3, 3, 'S')
-  doc.setFontSize(11)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(71, 85, 105)
-  doc.text('How others may see you', rightX + 4, yPos + 8)
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(71, 85, 105)
-  innerY = yPos + 13
-  commGuide.othersPerception.forEach((item) => {
-    innerY = addWrappedText(doc, `• ${item}`, rightX + 5, innerY, columnWidth - 8, 5, 9) + 1
-  })
-
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
-
-  // ========== PAGE 8: UNDERSTANDING YOUR SCORES & NEXT STEPS ==========
+  // ========== PAGE 5: CHECKLIST FOR COMMUNICATING CONTINUED ==========
   doc.addPage()
   yPos = margin
-  addHeader(doc, 'Understanding Your Scores & Next Steps')
-
+  addHeader(doc, 'Checklist for Communicating Continued')
   yPos = 40
 
-  // Understanding Scores Section
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text('What Do These Scores Mean?', margin, yPos)
-  yPos += 10
-
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(51, 65, 85)
-  const understandingText = `Your Natural Style (shown in green) represents how you typically behave when you're relaxed and in your comfort zone. This is your default way of interacting with the world.
+  const checklistContIntro = `This section of the report is a list of things NOT to do while communicating with ${result.name}. Review each statement with ${result.name} and identify those methods of communication that result in frustration or reduced performance. By sharing this information, both parties can negotiate a communication system that is mutually agreeable.`
+  yPos = addWrappedText(doc, checklistContIntro, margin, yPos, contentWidth, 5, 10) + 8
 
-Your Adaptive Style (shown in orange) shows how you respond under stress, pressure, or challenging situations. When facing difficulties, you may shift your behavior patterns.
-
-The percentages indicate the relative strength of each DISC dimension in your profile. Higher percentages mean that dimension plays a more significant role in your behavioral style.`
-
-  yPos = addWrappedText(doc, understandingText, margin, yPos, contentWidth, 7, 10) + 10
-
-  // Next Steps Section
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
-  doc.setTextColor(30, 41, 59)
-  doc.text('Next Steps', margin, yPos)
-  yPos += 10
+  doc.setTextColor(225, 29, 72) // rose-600
+  doc.text('Ways NOT to Communicate:', margin, yPos)
+  yPos += 8
 
-  doc.setFontSize(10)
+  doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(51, 65, 85)
-
-  const nextSteps = [
-    'Review your natural strengths and consider how to leverage them in your work',
-    'Be aware of your stress responses and develop strategies to manage them effectively',
-    'Share your profile with your team to improve communication and collaboration',
-    'Use your understanding of adaptive behaviors to recognize when you\'re under stress',
-    'Focus on the growth opportunities identified to continue your personal development',
-    'Consider retaking this assessment in 6-12 months to track your development',
-  ]
-
-  nextSteps.forEach((step, index) => {
-    if (yPos > pageHeight - 30) {
-      doc.addPage()
-      currentPage++
-      yPos = margin + 20
-    }
-    doc.text(`${index + 1}. ${step}`, margin + 5, yPos)
-    yPos += 8
+  checklist.waysNotToCommunicate.forEach((item) => {
+    ensureSpace(8)
+    // Draw checkbox
+    doc.setDrawColor(100, 116, 139)
+    doc.setLineWidth(0.5)
+    doc.rect(margin, yPos - 3, 4, 4, 'S')
+    yPos = addWrappedText(doc, item, margin + 8, yPos, contentWidth - 12, 5, 9) + 2
   })
+  yPos += 4
 
-  yPos += 10
+  // Add DISC charts at bottom if space allows
+  ensureSpace(50)
+  const chartY2 = pageHeight - 60
+  if (yPos < chartY2 - 10) {
+    yPos = chartY2
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text('Adapted Style', margin, yPos)
+    doc.text('Natural Style', margin + contentWidth / 2, yPos)
+    yPos += 5
 
-  // Closing
-  if (yPos < pageHeight - 40) {
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'italic')
+    // Draw simple bar charts
+    const chartWidth = contentWidth / 2 - 10
+    const chartHeight = 40
+    const barWidth = chartWidth / 4 - 2
+
+    // Adapted Style Chart
+    discTypes.forEach((type, idx) => {
+      const value = scores.adaptive[type]
+      const barHeight = (value / 100) * chartHeight
+      const x = margin + idx * (chartWidth / 4) + 2
+      const y = yPos + chartHeight - barHeight
+      const [r, g, b] = hexToRgb(profileDescriptions[type].color)
+      doc.setFillColor(r, g, b)
+      doc.rect(x, y, barWidth, barHeight, 'F')
+    })
+
+    // Natural Style Chart
+    discTypes.forEach((type, idx) => {
+      const value = scores.natural[type]
+      const barHeight = (value / 100) * chartHeight
+      const x = margin + contentWidth / 2 + idx * (chartWidth / 4) + 2
+      const y = yPos + chartHeight - barHeight
+      const [r, g, b] = hexToRgb(profileDescriptions[type].color)
+      doc.setFillColor(r, g, b)
+      doc.rect(x, y, barWidth, barHeight, 'F')
+    })
+
+    yPos += chartHeight + 5
+    doc.setFontSize(8)
     doc.setTextColor(71, 85, 105)
+    doc.text('D I S C', margin, yPos)
     doc.text(
-      'Thank you for completing the DISC Assessment. Use these insights to enhance your self-awareness and professional growth.',
+      `${scores.adaptive.D} ${scores.adaptive.I} ${scores.adaptive.S} ${scores.adaptive.C}`,
       margin,
-      yPos,
-      { maxWidth: contentWidth }
+      yPos + 4
     )
+    doc.text('D I S C', margin + contentWidth / 2, yPos)
+    doc.text(
+      `${scores.natural.D} ${scores.natural.I} ${scores.natural.S} ${scores.natural.C}`,
+      margin + contentWidth / 2,
+      yPos + 4
+    )
+    yPos += 10
+    doc.setFontSize(10)
+    doc.setTextColor(30, 41, 59)
+    doc.text(result.name, margin, yPos)
   }
 
-  addPageNumber(doc, currentPage, totalPages)
-  currentPage++
+  // ========== PAGE 6: PERCEPTIONS ==========
+  doc.addPage()
+  yPos = margin
+  addHeader(doc, 'Perceptions: See Yourself as Others See You')
+  yPos = 40
 
-  // ========== DRIVING FORCES SECTION (if available) ==========
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(51, 65, 85)
+  const perceptionsIntro = `A person's behavior and feelings may be quickly telegraphed to others. This section provides additional information on ${result.name}'s self-perception and how, under certain conditions, others may perceive their behavior. Understanding this section will empower ${result.name} to project the image that will allow them to control the situation.`
+  yPos = addWrappedText(doc, perceptionsIntro, margin, yPos, contentWidth, 5, 10) + 10
+
+  const perceptions = perceptionsData[scores.primaryNatural]
+  const boxWidth = (contentWidth - 20) / 3
+  const boxHeight = 80
+  const startY = yPos
+
+  // Self-Perception Box
+  doc.setFillColor(240, 249, 255) // sky-50
+  doc.setDrawColor(125, 211, 252) // sky-300
+  doc.setLineWidth(1)
+  doc.roundedRect(margin, startY, boxWidth, boxHeight, 2, 2, 'FD')
+  doc.setFillColor(219, 234, 254) // sky-200
+  doc.rect(margin, startY, boxWidth, 12, 'F')
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(30, 58, 138) // sky-800
+  doc.text('Self-Perception', margin + 4, startY + 8)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  doc.text(`${result.name} usually sees themselves as being:`, margin + 4, startY + 16)
+  doc.setFontSize(9)
+  doc.setTextColor(51, 65, 85)
+  let itemY = startY + 22
+  perceptions.selfPerception.forEach((item) => {
+    doc.text(`• ${item}`, margin + 6, itemY)
+    itemY += 5
+  })
+
+  // Others' Perception - Moderate Box
+  doc.setFillColor(255, 251, 235) // amber-50
+  doc.setDrawColor(253, 224, 71) // amber-300
+  doc.roundedRect(margin + boxWidth + 10, startY, boxWidth, boxHeight, 2, 2, 'FD')
+  doc.setFillColor(254, 243, 199) // amber-200
+  doc.rect(margin + boxWidth + 10, startY, boxWidth, 12, 'F')
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(146, 64, 14) // amber-800
+  doc.text('Others\' Perception - Moderate', margin + boxWidth + 14, startY + 8)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  const moderateText = 'Under moderate pressure, tension, stress or fatigue, others may see them as being:'
+  const moderateLines = doc.splitTextToSize(moderateText, boxWidth - 8)
+  doc.text(moderateLines, margin + boxWidth + 14, startY + 16)
+  doc.setFontSize(9)
+  doc.setTextColor(51, 65, 85)
+  itemY = startY + 16 + moderateLines.length * 4 + 4
+  perceptions.othersPerceptionModerate.forEach((item) => {
+    doc.text(`• ${item}`, margin + boxWidth + 16, itemY)
+    itemY += 5
+  })
+
+  // Others' Perception - Extreme Box
+  doc.setFillColor(254, 242, 242) // red-50
+  doc.setDrawColor(252, 165, 165) // red-300
+  doc.roundedRect(margin + 2 * (boxWidth + 10), startY, boxWidth, boxHeight, 2, 2, 'FD')
+  doc.setFillColor(254, 202, 202) // red-200
+  doc.rect(margin + 2 * (boxWidth + 10), startY, boxWidth, 12, 'F')
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(153, 27, 27) // red-800
+  doc.text('Others\' Perception - Extreme', margin + 2 * (boxWidth + 10) + 4, startY + 8)
+  doc.setFontSize(8)
+  doc.setFont('helvetica', 'normal')
+  doc.setTextColor(71, 85, 105)
+  const extremeText = 'Under extreme pressure, stress or fatigue, others may see them as being:'
+  const extremeLines = doc.splitTextToSize(extremeText, boxWidth - 8)
+  doc.text(extremeLines, margin + 2 * (boxWidth + 10) + 4, startY + 16)
+  doc.setFontSize(9)
+  doc.setTextColor(51, 65, 85)
+  itemY = startY + 16 + extremeLines.length * 4 + 4
+  perceptions.othersPerceptionExtreme.forEach((item) => {
+    doc.text(`• ${item}`, margin + 2 * (boxWidth + 10) + 6, itemY)
+    itemY += 5
+  })
+
+  yPos = startY + boxHeight + 10
+
+  // Add DISC charts at bottom
+  ensureSpace(50)
+  const chartY3 = pageHeight - 60
+  if (yPos < chartY3 - 10) {
+    yPos = chartY3
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text('Adapted Style', margin, yPos)
+    doc.text('Natural Style', margin + contentWidth / 2, yPos)
+    yPos += 5
+
+    // Draw simple bar charts
+    const chartWidth = contentWidth / 2 - 10
+    const chartHeight = 40
+    const barWidth = chartWidth / 4 - 2
+
+    // Adapted Style Chart
+    discTypes.forEach((type, idx) => {
+      const value = scores.adaptive[type]
+      const barHeight = (value / 100) * chartHeight
+      const x = margin + idx * (chartWidth / 4) + 2
+      const y = yPos + chartHeight - barHeight
+      const [r, g, b] = hexToRgb(profileDescriptions[type].color)
+      doc.setFillColor(r, g, b)
+      doc.rect(x, y, barWidth, barHeight, 'F')
+    })
+
+    // Natural Style Chart
+    discTypes.forEach((type, idx) => {
+      const value = scores.natural[type]
+      const barHeight = (value / 100) * chartHeight
+      const x = margin + contentWidth / 2 + idx * (chartWidth / 4) + 2
+      const y = yPos + chartHeight - barHeight
+      const [r, g, b] = hexToRgb(profileDescriptions[type].color)
+      doc.setFillColor(r, g, b)
+      doc.rect(x, y, barWidth, barHeight, 'F')
+    })
+
+    yPos += chartHeight + 5
+    doc.setFontSize(8)
+    doc.setTextColor(71, 85, 105)
+    doc.text('D I S C', margin, yPos)
+    doc.text(
+      `${scores.adaptive.D} ${scores.adaptive.I} ${scores.adaptive.S} ${scores.adaptive.C}`,
+      margin,
+      yPos + 4
+    )
+    doc.text('D I S C', margin + contentWidth / 2, yPos)
+    doc.text(
+      `${scores.natural.D} ${scores.natural.I} ${scores.natural.S} ${scores.natural.C}`,
+      margin + contentWidth / 2,
+      yPos + 4
+    )
+    yPos += 10
+    doc.setFontSize(10)
+    doc.setTextColor(30, 41, 59)
+    doc.text(result.name, margin, yPos)
+  }
+
+  // --- Driving Forces (compact text version) ---
   if (hasDrivingForces && result.drivingForces) {
     const dfScores = result.drivingForces.scores || {}
 
@@ -996,38 +1275,28 @@ The percentages indicate the relative strength of each DISC dimension in your pr
       },
     ]
 
-    doc.addPage()
-    yPos = margin
-    addHeader(doc, 'Your Driving Forces Profile')
+    ensureSpace(60)
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(30, 41, 59)
+    doc.text('Your Driving Forces', margin, yPos)
+    yPos += 6
 
-    yPos = 40
-    doc.setFontSize(11)
+    doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
-    doc.setTextColor(51, 65, 85)
-    yPos = addWrappedText(
-      doc,
-      'These six scales show how strongly you lean toward each side of the core motivators that influence your decisions and priorities.',
-      margin,
-      yPos,
-      contentWidth,
-      7,
-      11
-    ) + 8
-
-    const trackLeft = margin + 40
-    const trackRight = pageWidth - margin - 40
-    const trackWidth = trackRight - trackLeft
+    doc.setTextColor(71, 85, 105)
+    yPos =
+      addWrappedText(
+        doc,
+        'These six scales show how strongly you lean toward each side of the core motivators that influence your decisions and priorities.',
+        margin,
+        yPos,
+        contentWidth,
+        5,
+        9
+      ) + 4
 
     drivingForcePairs.forEach((pair) => {
-      if (yPos > pageHeight - 30) {
-        addPageNumber(doc, currentPage, totalPages)
-        currentPage++
-        doc.addPage()
-        yPos = margin
-        addHeader(doc, 'Your Driving Forces Profile (cont.)')
-        yPos = 40
-      }
-
       const leftRaw = Number(dfScores[pair.leftCode] || 0)
       const rightRaw = Number(dfScores[pair.rightCode] || 0)
       const total = leftRaw + rightRaw
@@ -1040,104 +1309,48 @@ The percentages indicate the relative strength of each DISC dimension in your pr
         rightPct = 100 - leftPct
       }
 
-      const indicatorPosition = trackLeft + (rightPct / 100) * trackWidth
-
-      const [r, g, b] = hexToRgb(pair.color)
-
-      // Row header
-      doc.setFontSize(9)
-      doc.setTextColor(100, 116, 139)
-      doc.text(pair.motivator, margin, yPos)
-      doc.text(pair.centerLabel, pageWidth / 2, yPos, { align: 'center' })
-
-      const rowCenterY = yPos + 8
-
-      // Base track
-      doc.setDrawColor(226, 232, 240)
-      doc.setLineWidth(1)
-      doc.line(trackLeft, rowCenterY, trackRight, rowCenterY)
-
-      // Filled segment
-      doc.setDrawColor(r, g, b)
-      doc.setLineWidth(2.5)
-      doc.line(trackLeft, rowCenterY, indicatorPosition, rowCenterY)
-
-      // Ticks at 0/25/50/75/100
-      doc.setDrawColor(209, 213, 219)
-      doc.setLineWidth(0.5)
-      ;[0, 25, 50, 75, 100].forEach((v) => {
-        const x = trackLeft + (v / 100) * trackWidth
-        doc.line(x, rowCenterY - 2, x, rowCenterY + 2)
-      })
-
-      // Indicator knob
-      doc.setFillColor(r, g, b)
-      doc.setDrawColor(255, 255, 255)
-      doc.circle(indicatorPosition, rowCenterY, 2.5, 'FD')
-
-      // Left circle
-      const leftCircleX = margin + 15
-      doc.setFillColor(r, g, b)
-      doc.setDrawColor(r, g, b)
-      doc.circle(leftCircleX, rowCenterY, 6, 'FD')
-      doc.setFontSize(8)
-      doc.setTextColor(255, 255, 255)
-      doc.text(String(leftPct), leftCircleX, rowCenterY + 2, { align: 'center' })
-
-      // Right circle
-      const rightCircleX = pageWidth - margin - 15
-      doc.setFillColor(r, g, b)
-      doc.setDrawColor(r, g, b)
-      doc.circle(rightCircleX, rowCenterY, 6, 'FD')
-      doc.text(String(rightPct), rightCircleX, rowCenterY + 2, { align: 'center' })
-
-      // Labels under circles
-      doc.setFontSize(8)
-      doc.setTextColor(55, 65, 81)
-      doc.text(pair.leftLabel, leftCircleX, rowCenterY + 11, { align: 'center' })
-      doc.text(pair.rightLabel, rightCircleX, rowCenterY + 11, { align: 'center' })
-
-      yPos += 20
-    })
-
-    yPos += 6
-
-    if (yPos > pageHeight - 40) {
-      addPageNumber(doc, currentPage, totalPages)
-      currentPage++
-      doc.addPage()
-      yPos = margin
-      addHeader(doc, 'Your Driving Forces Profile (cont.)')
-      yPos = 40
-    }
-
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(30, 41, 59)
-    doc.text('What each scale means', margin, yPos)
-    yPos += 8
-
-    doc.setFontSize(9)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(71, 85, 105)
-
-    drivingForcePairs.forEach((pair) => {
-      const text = `${pair.leftLabel} → ${pair.rightLabel}: ${pair.description}`
-      yPos = addWrappedText(doc, text, margin, yPos, contentWidth, 5, 9) + 2
       if (yPos > pageHeight - 30) {
-        addPageNumber(doc, currentPage, totalPages)
-        currentPage++
         doc.addPage()
         yPos = margin
-        addHeader(doc, 'Your Driving Forces Profile (cont.)')
+        addHeader(doc, 'Your Driving Forces (cont.)')
         yPos = 40
       }
-    })
 
-    addPageNumber(doc, currentPage, totalPages)
+      doc.setFontSize(10)
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(30, 41, 59)
+      doc.text(`${pair.motivator} – ${pair.centerLabel}`, margin, yPos)
+      yPos += 5
+
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(51, 65, 85)
+      doc.text(
+        `${pair.leftLabel}: ${leftPct}%    ${pair.rightLabel}: ${rightPct}%`,
+        margin,
+        yPos
+      )
+      yPos += 5
+
+      doc.setFontSize(9)
+      doc.setTextColor(71, 85, 105)
+      yPos = addWrappedText(doc, pair.description, margin, yPos, contentWidth, 5, 9) + 4
+    })
   }
 
-  // Save the PDF
+  // Add page numbers dynamically once layout is complete
+  const anyDoc = doc as any
+  const totalPages =
+    typeof anyDoc.getNumberOfPages === 'function'
+      ? anyDoc.getNumberOfPages()
+      : anyDoc.internal?.getNumberOfPages?.() ?? 1
+
+  for (let page = 1; page <= totalPages; page++) {
+    doc.setPage(page)
+    addPageNumber(doc, page, totalPages)
+  }
+
+  // Save the PDF (2–3 pages for most profiles)
   const fileName = `DISC_Assessment_${result.name.replace(/\s+/g, '_')}_${result.date}.pdf`
   doc.save(fileName)
 }
