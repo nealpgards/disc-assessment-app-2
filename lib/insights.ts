@@ -99,18 +99,20 @@ function isAssessmentCompleted(result: ResultRow): boolean {
     typeof result.adaptive_S === 'number' && !isNaN(result.adaptive_S) &&
     typeof result.adaptive_C === 'number' && !isNaN(result.adaptive_C)
   
-  const hasValidPrimaryTypes = 
+  const hasValidPrimaryTypes = Boolean(
     result.primary_natural && 
     typeof result.primary_natural === 'string' &&
     ['D', 'I', 'S', 'C'].includes(result.primary_natural) &&
     result.primary_adaptive &&
     typeof result.primary_adaptive === 'string' &&
     ['D', 'I', 'S', 'C'].includes(result.primary_adaptive)
+  )
   
-  const hasValidDepartment = 
+  const hasValidDepartment = Boolean(
     result.department && 
     typeof result.department === 'string' && 
     normalizeDepartmentName(result.department).length > 0
+  )
   
   return hasValidNaturalScores && hasValidAdaptiveScores && hasValidPrimaryTypes && hasValidDepartment
 }

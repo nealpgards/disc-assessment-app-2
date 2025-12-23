@@ -440,7 +440,11 @@ export async function generatePDFReport(
     }
 
     // Add page numbers
-    const totalPagesFinal = doc.getNumberOfPages()
+    const anyDoc = doc as any
+    const totalPagesFinal =
+      typeof anyDoc.getNumberOfPages === 'function'
+        ? anyDoc.getNumberOfPages()
+        : anyDoc.internal?.getNumberOfPages?.() ?? 1
     for (let page = 1; page <= totalPagesFinal; page++) {
       doc.setPage(page)
       doc.setFontSize(9)
