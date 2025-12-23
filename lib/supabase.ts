@@ -11,9 +11,23 @@ function getSupabaseClient(): SupabaseClient {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  // During build time (Next.js build phase), allow placeholder client to prevent build errors
+  // The Proxy ensures this only gets called when actually used, not during module load
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Check if we're in Next.js build phase
+    const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build' || 
+                         (typeof process.env.VERCEL === 'undefined' && process.env.NODE_ENV === 'production')
+    
+    if (isBuildPhase) {
+      // During build, create a placeholder client
+      // This will fail at runtime if env vars are still missing, but allows build to succeed
+      supabaseClient = createClient('https://placeholder.supabase.co', 'placeholder-key') as SupabaseClient
+      return supabaseClient
+    }
+    
+    // At runtime, throw error if env vars are missing
     throw new Error(
-      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file.'
+      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment variables.'
     )
   }
 
@@ -30,9 +44,23 @@ function getSupabaseAdminClient(): SupabaseClient {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
+  // During build time (Next.js build phase), allow placeholder client to prevent build errors
+  // The Proxy ensures this only gets called when actually used, not during module load
   if (!supabaseUrl || !supabaseAnonKey) {
+    // Check if we're in Next.js build phase
+    const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build' || 
+                         (typeof process.env.VERCEL === 'undefined' && process.env.NODE_ENV === 'production')
+    
+    if (isBuildPhase) {
+      // During build, create a placeholder client
+      // This will fail at runtime if env vars are still missing, but allows build to succeed
+      supabaseAdminClient = createClient('https://placeholder.supabase.co', 'placeholder-key') as SupabaseClient
+      return supabaseAdminClient
+    }
+    
+    // At runtime, throw error if env vars are missing
     throw new Error(
-      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your .env.local file.'
+      'Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your environment variables.'
     )
   }
 

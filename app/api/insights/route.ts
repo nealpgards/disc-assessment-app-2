@@ -7,6 +7,10 @@ import {
   getDepartmentCollaborationAnalysis,
 } from '@/lib/insights'
 
+// Force dynamic rendering to prevent Next.js from trying to execute this during build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET() {
   console.log('[API] Insights endpoint called')
   

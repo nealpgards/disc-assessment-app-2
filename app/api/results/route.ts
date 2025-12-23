@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { dbInstance } from '@/lib/db'
 
+// Force dynamic rendering to prevent Next.js from trying to execute this during build
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
