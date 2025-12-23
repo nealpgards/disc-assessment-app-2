@@ -367,7 +367,11 @@ export default function AdminDashboard({ initialTeamCode }: AdminDashboardProps)
     setLoadingInsights(true)
     setInsightsError(null)
     try {
-      const res = await fetch('/api/insights')
+      // Include team code in API request if selected
+      const url = selectedTeamCode 
+        ? `/api/insights?teamCode=${encodeURIComponent(selectedTeamCode)}`
+        : '/api/insights'
+      const res = await fetch(url)
       if (!res.ok) {
         let errorMessage = `Failed to fetch insights: ${res.status} ${res.statusText}`
         try {

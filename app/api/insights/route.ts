@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import {
   calculateDepartmentCompatibility,
   analyzeTeamComposition,
@@ -11,8 +11,12 @@ import {
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-export async function GET() {
-  console.log('[API] Insights endpoint called')
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const teamCode = searchParams.get('teamCode')
+  const normalizedTeamCode = teamCode ? teamCode.trim().toUpperCase() : undefined
+  
+  console.log('[API] Insights endpoint called', normalizedTeamCode ? `for team code: ${normalizedTeamCode}` : '')
   
   const result: {
     compatibility: Array<{ dept1: string; dept2: string; score: number; reasoning: string }>
@@ -39,7 +43,7 @@ export async function GET() {
   try {
     // Get department data to provide metadata
     console.log('[API] Fetching department data...')
-    const deptData = await getDepartmentData()
+    const deptData = await getDepartmentData(normalizedTeamCode)
     const departmentCount = deptData.length
     const totalResults = deptData.reduce((sum, dept) => sum + dept.count, 0)
 
@@ -80,7 +84,7 @@ export async function GET() {
     // Calculate comprehensive department collaboration analysis
     try {
       console.log('[API] Calculating department collaboration analysis...')
-      const collaborationAnalysis = await getDepartmentCollaborationAnalysis()
+      const collaborationAnalysis = await getDepartmentCollaborationAnalysis(normalizedTeamCode)
       result.departmentCollaboration = collaborationAnalysis
       console.log('[API] Department collaboration analysis complete:', {
         matrixEntries: collaborationAnalysis.compatibilityMatrix.length,
